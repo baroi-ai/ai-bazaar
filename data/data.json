@@ -59,7 +59,7 @@
         "id": 12,
         "name": "Facepoke",
         "size": "3.8GB",
-        "logo": "logo/facepoke.gif",
+        "logo": "data/img/facepoke.gif",
         "version": "1.0",
         "developer": "Julian BILCKE",
         "update": "2025-11-01",
