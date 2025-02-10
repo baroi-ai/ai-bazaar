@@ -1,0 +1,293 @@
+[
+    {
+        "id": 15,
+        "name": "Echomimic 2",
+        "size": "7.8GB",
+        "logo": "logo/echomimic2.jpeg",
+        "version": "2.0",
+        "developer": "Ant Group",
+        "update": "2025-11-01",
+        "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
+        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
+        "links": {
+          "github": "https://github.com/antgroup/echomimic_v2",
+          "huggingface":"https://huggingface.co/BadToBest/EchoMimicV2",
+          "website":"https://antgroup.github.io/ai/echomimic_v2/",
+          "paper":"https://arxiv.org/abs/2411.10061"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+        "id": 14,
+        "name": "MFLUX",
+        "size": "7.8GB",
+        "logo": "logo/MFLUX.png",
+        "version": "1.0",
+        "developer": "Charaf",
+        "update": "2025-11-01",
+        "description": "MFLUX WebUI is a comprehensive interface for the MFLUX image generation system. It provides an intuitive way to interact with MFLUX models, offering both simple and advanced options for image generation, as well as support for ControlNet, LoRA integration, and image-to-image transformation.",
+        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
+        "links": {
+          "github": "https://github.com/CharafChnioune/MFLUX-WEBUI"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+        "id": 13,
+        "name": "Ai comic factory",
+        "size": "3.8GB",
+        "logo": "logo/comic.jpg",
+        "version": "1.0",
+        "developer": "Julian BILCKE",
+        "update": "2025-11-01",
+        "description": "Generate comic panels using a LLM + SDXL.",
+        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
+        "links": {
+          "github": "https://github.com/jbilcke-hf/FacePoke",
+          "website":"https://aicomicfactory.app/",
+          "huggingface": "https://huggingface.co/spaces/jbilcke-hf/ai-comic-factory"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+        "id": 12,
+        "name": "Facepoke",
+        "size": "3.8GB",
+        "logo": "logo/facepoke.gif",
+        "version": "1.0",
+        "developer": "Julian BILCKE",
+        "update": "2025-11-01",
+        "description": "A real-time head transformation app.",
+        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
+        "links": {
+          "github": "https://github.com/jbilcke-hf/FacePoke",
+          "huggingface": "https://huggingface.co/spaces/jbilcke-hf/FacePoke",
+          "paper":"https://arxiv.org/abs/2407.03168"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+        "id": 11,
+        "name": "Diamond",
+        "size": "8GB",
+        "logo": "logo/diamond.gif",
+        "version": "1.0",
+        "developer": "Eloi Alonso",
+        "update": "2025-11-01",
+        "description": "Diffusion for World Modeling Visual Details Matter in Atari.",
+        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
+        "links": {
+          "github": "https://github.com/eloialonso/diamond",
+          "website": "https://diamond-wm.github.io/",
+          "huggingface": "https://huggingface.co/spaces/KwaiVGI/LivePortrait",
+          "paper":"https://arxiv.org/pdf/2405.12399"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+        "id": 10,
+        "name": "Liveportrait",
+        "size": "8GB",
+        "logo": "logo/liveportrait.png",
+        "version": "1.0",
+        "developer": "KwaiVGI",
+        "update": "2025-11-01",
+        "description": "Efficient Portrait Animation with Stitching and Retargeting Control.",
+        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
+        "links": {
+          "github": "https://github.com/KwaiVGI/LivePortrait",
+          "website": "https://liveportrait.github.io/",
+          "huggingface": "https://huggingface.co/spaces/KwaiVGI/LivePortrait",
+          "paper":"https://arxiv.org/pdf/2407.03168"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+        "id": 9,
+        "name": "F5 TTS",
+        "size": "5GB",
+        "logo": "logo/e2-f5-tts.png",
+        "version": "1.0",
+        "developer": "Yushen CHEN",
+        "update": "2025-11-01",
+        "description": "F5-TTS: A Fairytaler that Fakes Fluent and Faithful Speech with Flow Matching.",
+        "system_requirements": "At least a mid-range CPU, 16GB of RAM, and a dedicated NVIDIA GPU like a GeForce GTX 1050 Ti or better.",
+        "links": {
+          "github": "https://github.com/SWivid/F5-TTS",
+          "website": "https://f5tts.org/",
+          "huggingface": "https://huggingface.co/spaces/mrfakename/E2-F5-TTS",
+          "paper":"https://arxiv.org/abs/2410.06885"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+        "id": 8,
+        "name": "Autogpt",
+        "size": "5GB",
+        "logo": "logo/autogpt.png",
+        "version": "1.0",
+        "developer": "Significant-Gravitas",
+        "update": "2025-11-01",
+        "description": "AutoGPT is a powerful platform that allows you to create, deploy, and manage continuous AI agents that automate complex workflows.",
+        "system_requirements": "RAM 8 GB for running 3B models, 16 GB for running 7B models, and 32 GB for running 13B models.",
+        "links": {
+          "github": "https://github.com/Significant-Gravitas/AutoGPT",
+          "website": "https://autogpt.net/",
+          "huggingface": "https://huggingface.co/spaces/aliabid94/AutoGPT"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+        "id": 7,
+        "name": "Ollama",
+        "size": "3GB",
+        "logo": "logo/ollama.png",
+        "version": "1.0",
+        "developer": "Ollama",
+        "update": "2025-11-01",
+        "description": "Get up and running with large language models.",
+        "system_requirements": "RAM 8 GB for running 3B models, 16 GB for running 7B models, and 32 GB for running 13B models.",
+        "links": {
+          "github": "https://github.com/ollama/ollama",
+          "website": "https://ollama.com/",
+          "huggingface": "https://huggingface.co/docs/hub/en/ollama"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+        "id": 6,
+        "name": "Applio",
+        "size": "1.5GB",
+        "logo": "logo/applio.png",
+        "version": "1.0",
+        "developer": "IAHispano",
+        "update": "2025-11-01",
+        "description": "Applio is a powerful voice conversion tool focused on simplicity, quality, and performance. Whether you're an artist, developer, or researcher, Applio offers a straightforward platform for high-quality voice transformations. Its flexible design allows for customization through plugins and configurations, catering to a wide range of projects.",
+        "system_requirements": "at least an Nvidia RTX 2000 series graphics card or higher.",
+        "links": {
+          "github": "https://github.com/IAHispano/Applio",
+          "website": "https://applio.org/",
+          "huggingface": "https://huggingface.co/spaces/IAHispano/Applio",
+          "google_colab":"https://colab.research.google.com/github/iahispano/applio/blob/master/assets/Applio.ipynb"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+        "id": 5,
+        "name": "Comfi UI",
+        "size": "15GB",
+        "logo": "logo/comfi-ui.jpeg",
+        "version": "1.0",
+        "developer": "Comfyanonymous",
+        "update": "2025-11-01",
+        "description": "This ui will let you design and execute advanced stable diffusion pipelines using a graph/nodes/flowchart based interface ",
+        "system_requirements": "GPU: A decent NVIDIA GPU with at least 8 GB of VRAM CPU: A modern processor, such as an Intel Xeon E5 or i5, or a Ryzen 5 or higher RAM: 16 GB or more Operating system: Windows 10/11 or Linux Storage space: Enough space on your PC for models and generated images.",
+        "links": {
+          "github": "https://github.com/comfyanonymous/ComfyUI",
+          "website": "https://www.comfy.org/",
+          "huggingface": "https://huggingface.co/spideyrim/ComfyUI",
+          "google_colab":"https://colab.research.google.com/github/ltdrdata/ComfyUI-Manager/blob/main/notebooks/comfyui_colab_with_manager.ipynb"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+        "id": 4,
+        "name": "Hunyuan3D 2",
+        "size": "10GB",
+        "logo": "logo/tencent.png",
+        "version": "2.0",
+        "developer": "Tencent",
+        "update": "2025-11-01",
+        "description": "Hunyuan3D 2.0, an advanced large-scale 3D synthesis system for generating high-resolution textured 3D assets. This system includes two foundation components: a large-scale shape generation model - Hunyuan3D-DiT, and a large-scale texture synthesis model - Hunyuan3D-Paint. ",
+        "system_requirements": "at least 12GB of VRAM on an NVIDIA RTX 3000 or 4000 series GPU; 16GB of RAM is recommended, along with ample storage space (around 50GB free) for model files and dependencies; for optimal performance, consider a GPU with even more VRAM (24GB+)",
+        "links": {
+          "github": "https://github.com/Tencent/Hunyuan3D-2",
+          "website": "https://3d-models.hunyuan.tencent.com/",
+          "huggingface": "https://huggingface.co/tencent/Hunyuan3D-2",
+          "paper": "https://github.com/Tencent/Hunyuan3D-2/blob/main/assets/report/Tencent_Hunyuan3D_2_0.pdf"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+        "id": 3,
+        "name": "FLUX.1 [dev]",
+        "size": "10GB",
+        "logo": "logo/flux.png",
+        "version": "1.0",
+        "developer": "black forest labs ",
+        "update": "2025-11-01",
+        "description": "The FLUX. 1 Dev model is a powerful tool for generating high-quality images from text descriptions. With 12 billion parameters, it boasts cutting-edge output quality, competitive prompt following, and efficient performance thanks to its training using guidance distillation.",
+        "system_requirements": "at least 12GB of VRAM on an NVIDIA RTX 3000 or 4000 series GPU; 16GB of RAM is recommended, along with ample storage space (around 50GB free) for model files and dependencies; for optimal performance, consider a GPU with even more VRAM (24GB+)",
+        "links": {
+          "github": "https://github.com/black-forest-labs/flux",
+          "website": "https://blackforestlabs.ai/",
+          "huggingface": "https://huggingface.co/black-forest-labs/FLUX.1-dev",
+          "google_colab": "https://colab.research.google.com/github/camenduru/flux-jupyter/blob/main/flux.1-dev_jupyter.ipynb",
+          "paper": "https://www.arxiv.org/abs/2412.18653"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+        "id": 2,
+        "name": "Bolt.diy",
+        "size": "3GB",
+        "logo": "logo/bolt.png",
+        "version": "1.0",
+        "developer": "StackBlitz Labs",
+        "update": "2025-11-01",
+        "description": "Welcome to bolt.diy, the official open source version of Bolt.new (previously known as oTToDev and bolt.new ANY LLM), which allows you to choose the LLM that you use for each prompt! Currently, you can use OpenAI, Anthropic, Ollama, OpenRouter, Gemini, LMStudio, Mistral, xAI, HuggingFace, DeepSeek, or Groq models - and it is easily extended to use any other model supported by the Vercel AI SDK! See the instructions below for running this locally and extending it to include more models.",
+        "system_requirements": "OS: Linux; RAM: 4GB minimum; Disk Space: 3GB available",
+        "links": {
+          "github": "https://github.com/stackblitz-labs/bolt.diy",
+          "website": "https://stackblitz-labs.github.io/bolt.diy/",
+          "huggingface": "https://huggingface.co/spaces/aproli90/bolt.diy"
+        },
+        "install_command": "docker run anotherimage:latest",
+        "start_command": "python anotherapp.py"
+    },
+
+    {
+      "id": 1,
+      "name": "Browser Use",
+      "size": "2.5GB",
+      "logo": "logo/browser-use.png",
+      "version": "1.0.0",
+      "developer": "Zurich and San Francisco",
+      "update": "2025-10-02",
+      "description": "Browser-use is the easiest way to connect your AI agents with the browser.",
+      "system_requirements": "OS: Windows 10 or higher; RAM: 8GB minimum; Disk Space: 2GB available",
+      "links": {
+        "github": "https://github.com/browser-use/browser-use",
+        "website": "https://browser-use.com/"
+      },
+      "install_command": "docker run yourimage:latest",
+      "start_command": "python app.py"
+    }
+  ]
+  
