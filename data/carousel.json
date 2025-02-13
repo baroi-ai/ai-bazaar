@@ -3,35 +3,35 @@
         "id": 5,
         "title": "Baroi AI",
         "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg5.png"
+        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg5.jpg"
     },
   
   {
         "id": 4,
         "title": "Hunyan 3d",
         "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg4.png"
+        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg4.jpg"
     },
 
   {
         "id": 3,
         "title": "Gamming",
         "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg3.png"
+        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg3.jpg"
     },
   
     {
         "id": 2,
         "title": "Le chat",
         "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg2.png"
+        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg2.jpg"
     },
 
   {
         "id": 1,
         "title": "Newsletter",
         "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg1.png"
+        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg.jpg"
     }
 
 ]
