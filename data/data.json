@@ -286,7 +286,7 @@
         "github": "https://github.com/browser-use/browser-use",
         "website": "https://browser-use.com/"
       },
-      "install_command": "docker run yourimage:latest",
+      "install_command": "docker pull baroi/web-ui",
       "start_command": "python app.py"
     }
   ]
