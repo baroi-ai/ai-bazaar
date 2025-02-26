@@ -15,8 +15,8 @@
           "website":"https://antgroup.github.io/ai/echomimic_v2/",
           "paper":"https://arxiv.org/abs/2411.10061"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "docker run anotherimage:latest",
+        "mac_link": "python anotherapp.py"
     },
 
     {
@@ -32,8 +32,8 @@
         "links": {
           "github": "https://github.com/CharafChnioune/MFLUX-WEBUI"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
@@ -51,8 +51,8 @@
           "website":"https://aicomicfactory.app/",
           "huggingface": "https://huggingface.co/spaces/jbilcke-hf/ai-comic-factory"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
@@ -70,8 +70,8 @@
           "huggingface": "https://huggingface.co/spaces/jbilcke-hf/FacePoke",
           "paper":"https://arxiv.org/abs/2407.03168"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
@@ -90,8 +90,8 @@
           "huggingface": "https://huggingface.co/spaces/KwaiVGI/LivePortrait",
           "paper":"https://arxiv.org/pdf/2405.12399"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
@@ -110,8 +110,8 @@
           "huggingface": "https://huggingface.co/spaces/KwaiVGI/LivePortrait",
           "paper":"https://arxiv.org/pdf/2407.03168"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
@@ -130,8 +130,8 @@
           "huggingface": "https://huggingface.co/spaces/mrfakename/E2-F5-TTS",
           "paper":"https://arxiv.org/abs/2410.06885"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
@@ -149,8 +149,8 @@
           "website": "https://autogpt.net/",
           "huggingface": "https://huggingface.co/spaces/aliabid94/AutoGPT"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
@@ -168,8 +168,8 @@
           "website": "https://ollama.com/",
           "huggingface": "https://huggingface.co/docs/hub/en/ollama"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
@@ -188,8 +188,8 @@
           "huggingface": "https://huggingface.co/spaces/IAHispano/Applio",
           "google_colab":"https://colab.research.google.com/github/iahispano/applio/blob/master/assets/Applio.ipynb"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
@@ -208,8 +208,8 @@
           "huggingface": "https://huggingface.co/spideyrim/ComfyUI",
           "google_colab":"https://colab.research.google.com/github/ltdrdata/ComfyUI-Manager/blob/main/notebooks/comfyui_colab_with_manager.ipynb"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
@@ -228,8 +228,8 @@
           "huggingface": "https://huggingface.co/tencent/Hunyuan3D-2",
           "paper": "https://github.com/Tencent/Hunyuan3D-2/blob/main/assets/report/Tencent_Hunyuan3D_2_0.pdf"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
@@ -249,8 +249,8 @@
           "google_colab": "https://colab.research.google.com/github/camenduru/flux-jupyter/blob/main/flux.1-dev_jupyter.ipynb",
           "paper": "https://www.arxiv.org/abs/2412.18653"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
@@ -268,8 +268,8 @@
           "website": "https://stackblitz-labs.github.io/bolt.diy/",
           "huggingface": "https://huggingface.co/spaces/aproli90/bolt.diy"
         },
-        "install_command": "docker run anotherimage:latest",
-        "start_command": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
@@ -286,8 +286,8 @@
         "github": "https://github.com/browser-use/browser-use",
         "website": "https://browser-use.com/"
       },
-      "install_command": "docker pull baroi/web-ui",
-      "start_command": "python app.py"
+       "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+       "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     }
   ]
   
