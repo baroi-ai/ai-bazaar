@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>App Details - AI Bazaar</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html {
+            overflow: scroll;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar {
+            width: 0;
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #FF0000;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-white">
+    <!-- Navbar -->
+    <nav class="bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <span class="text-cyan-500 font-bold text-xl">AI Bazaar</span>
+            <div class="hidden md:flex space-x-4">
+                <a href="/" class="text-white hover:text-cyan-500">Home</a>
+                <a href="/apps.html" class="text-white hover:text-cyan-500">Apps</a>
+                <a href="#" class="text-white hover:text-cyan-500">About</a>
+                <a href="#" class="text-white hover:text-cyan-500">Support</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Carousel Section -->
+    <section id="carousel-section" class="relative h-[50vh] overflow-hidden bg-gray-900">
+        <!-- Slide 1 -->
+        <div class="carousel-slide absolute inset-0 transition-opacity duration-1000 opacity-100">
+            <img src="https://images.unsplash.com/photo-1593642634443-44adaa06623a?fit=crop&w=1920&h=1080" alt="Slide 1"
+                class="w-full h-full object-cover opacity-40" />
+            <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+        </div>
+        <!-- Slide 2 -->
+        <div class="carousel-slide absolute inset-0 transition-opacity duration-1000 opacity-0">
+            <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?fit=crop&w=1920&h=1080" alt="Slide 2"
+                class="w-full h-full object-cover opacity-40" />
+            <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+        </div>
+        <!-- Slide 3 -->
+        <div class="carousel-slide absolute inset-0 transition-opacity duration-1000 opacity-0">
+            <img src="https://images.unsplash.com/photo-1521747116042-5a810fda9664?fit=crop&w=1920&h=1080" alt="Slide 3"
+                class="w-full h-full object-cover opacity-40" />
+            <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+        </div>
+        <!-- Carousel Indicators -->
+        <div class="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+            <button class="w-3 h-3 bg-white rounded-full" onclick="setSlide(0)"></button>
+            <button class="w-3 h-3 bg-white rounded-full" onclick="setSlide(1)"></button>
+            <button class="w-3 h-3 bg-white rounded-full" onclick="setSlide(2)"></button>
+        </div>
+        <!-- Overlay: Centered App Logo -->
+        <div class="absolute inset-0 flex items-center justify-center">
+            <img id="appLogo" src="" alt="App Logo"
+                class="h-32 w-32 object-contain opacity-80 shadow-lg shadow-cyan-500/50" />
+        </div>
+    </section>
+
+    <!-- App Details Section -->
+    <section class="py-6">
+        <div class="max-w-4xl mx-auto px-4">
+            <!-- App Name -->
+            <h1 id="appName" class="text-3xl font-bold text-cyan-500 mb-4 text-center"></h1>
+
+            <!-- Links: Icons for GitHub, Huggingface, Website, Google Colab, Paper -->
+            <div id="appLinks" class="flex justify-center space-x-4 mb-6">
+                <!-- GitHub -->
+                <a href="#" id="githubLink" class="hover:text-cyan-500" title="GitHub">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path
+                            d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577
+              0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.089-.744.084-.729.084-.729
+              1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.418-1.305.76-1.605-2.665-.3-5.467-1.332-5.467-5.93
+              0-1.31.47-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23a11.49 11.49 0 0 1 3-.405c1.02.005 2.045.138 3
+              .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.435.372.81 1.102.81
+              2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+                    </svg>
+                </a>
+                <!-- Huggingface -->
+                <a href="#" id="huggingfaceLink" class="hover:text-cyan-500" title="Huggingface">
+                    <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" class="w-6 h-6" viewBox=" 0 0 48 48">
+                        <path fill="#fff"
+                            d="M45.898,36.731c0.354,1.015,0.269,2.096-0.203,3.037c-0.34,0.686-0.826,1.217-1.42,1.692	c-0.717,0.564-1.609,1.043-2.684,1.504c-1.283,0.545-2.849,1.058-3.567,1.246c-1.835,0.475-3.599,0.776-5.388,0.79	c-2.557,0.023-4.76-0.578-6.326-2.115c-0.811,0.099-1.632,0.155-2.458,0.155c-0.783,0-1.557-0.047-2.326-0.141	c-1.571,1.528-3.765,2.125-6.312,2.101c-1.788-0.014-3.552-0.315-5.392-0.79c-0.712-0.188-2.279-0.7-3.562-1.246	c-1.076-0.461-1.967-0.94-2.68-1.504c-0.599-0.475-1.085-1.006-1.425-1.692c-0.467-0.94-0.557-2.021-0.198-3.037	c-0.33-0.776-0.415-1.664-0.156-2.646c0.118-0.446,0.311-0.86,0.557-1.227c-0.052-0.193-0.094-0.39-0.123-0.606	c-0.179-1.288,0.269-2.463,1.113-3.375c0.415-0.456,0.863-0.771,1.33-0.973c-0.344-1.457-0.524-2.957-0.524-4.489	c0-10.839,8.817-19.625,19.696-19.625c3.736,0,7.232,1.034,10.214,2.839c0.538,0.329,1.066,0.682,1.571,1.058	c0.25,0.188,0.5,0.381,0.741,0.583c0.245,0.197,0.486,0.404,0.717,0.616c0.698,0.635,1.354,1.316,1.953,2.045	c0.203,0.24,0.396,0.489,0.585,0.743c0.382,0.503,0.736,1.025,1.061,1.565c0.495,0.809,0.929,1.655,1.307,2.534	c0.25,0.588,0.467,1.189,0.66,1.805c0.288,0.921,0.51,1.871,0.661,2.849c0.047,0.324,0.09,0.653,0.123,0.982	c0.066,0.658,0.104,1.326,0.104,2.007c0,1.514-0.179,2.999-0.514,4.433c0.519,0.202,1.01,0.531,1.467,1.029	c0.844,0.912,1.293,2.092,1.113,3.38c-0.028,0.212-0.071,0.409-0.123,0.602c0.245,0.367,0.439,0.78,0.557,1.227	C46.309,35.067,46.224,35.955,45.898,36.731z">
+                        </path>
+                        <linearGradient id="G0Jpwzc9gkuJdD7CvJwJVa_sop9ROXku5bb_gr1" x1="5.66" x2="42.193" y1="23.549"
+                            y2="23.549" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#ff8100"></stop>
+                            <stop offset="1" stop-color="#ff8100"></stop>
+                        </linearGradient>
+                        <path fill="url(#G0Jpwzc9gkuJdD7CvJwJVa_sop9ROXku5bb_gr1)"
+                            d="M40.307,23.548c0-8.992-7.334-16.281-16.381-16.281S7.546,14.557,7.546,23.548	s7.334,16.281,16.381,16.281S40.307,32.54,40.307,23.548z M5.66,23.548c0-10.027,8.178-18.155,18.266-18.155	s18.266,8.128,18.266,18.155s-8.178,18.155-18.266,18.155S5.66,33.575,5.66,23.548z">
+                        </path>
+                        <linearGradient id="G0Jpwzc9gkuJdD7CvJwJVb_sop9ROXku5bb_gr2" x1="13.866" x2="35.058" y1="8.398"
+                            y2="40.313" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#ffd21e"></stop>
+                            <stop offset=".364" stop-color="#feca17"></stop>
+                            <stop offset=".941" stop-color="#fbb302"></stop>
+                            <stop offset="1" stop-color="#fbb000"></stop>
+                        </linearGradient>
+                        <path fill="url(#G0Jpwzc9gkuJdD7CvJwJVb_sop9ROXku5bb_gr2)"
+                            d="M23.926,39.921	c9.104,0,16.484-7.33,16.484-16.373S33.03,7.176,23.926,7.176S7.442,14.506,7.442,23.548S14.823,39.921,23.926,39.921z">
+                        </path>
+                        <linearGradient id="G0Jpwzc9gkuJdD7CvJwJVc_sop9ROXku5bb_gr3" x1="4.956" x2="20.549" y1="34.897"
+                            y2="34.897" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#ffd21e"></stop>
+                            <stop offset=".364" stop-color="#feca17"></stop>
+                            <stop offset=".941" stop-color="#fbb302"></stop>
+                            <stop offset="1" stop-color="#fbb000"></stop>
+                        </linearGradient>
+                        <path fill="url(#G0Jpwzc9gkuJdD7CvJwJVc_sop9ROXku5bb_gr3)"
+                            d="M19.667,39.803	c1.3-1.876,1.208-3.284-0.576-5.038c-1.784-1.754-2.822-4.32-2.822-4.32s-0.388-1.49-1.271-1.353	c-0.883,0.137-1.532,2.364,0.318,3.727c1.85,1.362-0.369,2.288-1.08,1.008c-0.712-1.279-2.656-4.568-3.664-5.197	c-1.008-0.629-1.717-0.277-1.48,1.02c0.238,1.297,4.452,4.439,4.042,5.119c-0.41,0.68-1.855-0.799-1.855-0.799	s-4.522-4.049-5.506-2.994c-0.985,1.055,0.747,1.939,3.214,3.409c2.468,1.469,2.659,1.858,2.309,2.414	c-0.351,0.556-5.797-3.963-6.309-2.047c-0.511,1.916,5.559,2.472,5.184,3.794c-0.375,1.323-4.276-2.503-5.074-1.012	c-0.798,1.491,5.505,3.243,5.556,3.256C12.69,41.308,17.861,42.409,19.667,39.803z">
+                        </path>
+                        <linearGradient id="G0Jpwzc9gkuJdD7CvJwJVd_sop9ROXku5bb_gr4" x1="3.166" x2="22.381" y1="34.962"
+                            y2="34.962" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#ff8100"></stop>
+                            <stop offset="1" stop-color="#ff8100"></stop>
+                        </linearGradient>
+                        <path fill="url(#G0Jpwzc9gkuJdD7CvJwJVd_sop9ROXku5bb_gr4)"
+                            d="M9.759,26.511	c-0.759,0-1.438,0.31-1.911,0.872c-0.293,0.348-0.598,0.909-0.623,1.749C6.906,29.041,6.6,28.99,6.314,28.99	c-0.727,0-1.383,0.277-1.847,0.78c-0.596,0.645-0.861,1.438-0.746,2.232c0.055,0.378,0.182,0.717,0.372,1.03	c-0.4,0.322-0.695,0.77-0.838,1.309c-0.112,0.423-0.226,1.303,0.371,2.209c-0.038,0.059-0.074,0.121-0.107,0.184	c-0.359,0.677-0.382,1.443-0.065,2.156c0.481,1.08,1.675,1.932,3.994,2.845c1.443,0.568,2.763,0.932,2.774,0.935	c1.907,0.492,3.632,0.741,5.125,0.741c2.745,0,4.71-0.835,5.841-2.483c1.82-2.653,1.56-5.08-0.795-7.419	c-1.303-1.294-2.17-3.203-2.35-3.622c-0.364-1.24-1.326-2.619-2.925-2.619h0c-0.135,0-0.271,0.011-0.405,0.032	c-0.701,0.109-1.313,0.51-1.75,1.113c-0.472-0.583-0.931-1.047-1.346-1.309C10.991,26.711,10.366,26.511,9.759,26.511z M9.759,28.375c0.239,0,0.531,0.101,0.853,0.304c1,0.63,2.93,3.927,3.636,5.209c0.237,0.43,0.641,0.611,1.006,0.611	c0.723,0,1.287-0.714,0.066-1.622c-1.836-1.366-1.192-3.598-0.316-3.735c0.038-0.006,0.076-0.009,0.113-0.009	c0.797,0,1.149,1.365,1.149,1.365s1.03,2.572,2.801,4.33c1.77,1.758,1.862,3.17,0.572,5.05c-0.88,1.282-2.565,1.45-4.291,1.45	c-1.791,0-3.629-0.314-4.658-0.579c-0.051-0.013-6.303-1.652-5.511-3.147c0.133-0.251,0.353-0.352,0.629-0.352	c1.116,0,3.146,1.65,4.018,1.65c0.195,0,0.34-0.15,0.397-0.351c0.388-1.389-5.661-1.815-5.153-3.735	c0.09-0.34,0.332-0.478,0.674-0.477c1.475,0,4.783,2.577,5.476,2.577c0.053,0,0.091-0.015,0.112-0.048	c0.347-0.557,0.187-1.011-2.261-2.484c-2.449-1.473-4.198-2.295-3.22-3.352c0.113-0.122,0.272-0.176,0.466-0.176	c1.487,0,4.999,3.177,4.999,3.177s0.948,0.98,1.522,0.98c0.132,0,0.244-0.052,0.32-0.179c0.406-0.681-3.776-3.831-4.012-5.13	C8.984,28.821,9.255,28.375,9.759,28.375z">
+                        </path>
+                        <linearGradient id="G0Jpwzc9gkuJdD7CvJwJVe_sop9ROXku5bb_gr5" x1="27.223" x2="42.816" y1="34.897"
+                            y2="34.897" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#ffd21e"></stop>
+                            <stop offset=".364" stop-color="#feca17"></stop>
+                            <stop offset=".941" stop-color="#fbb302"></stop>
+                            <stop offset="1" stop-color="#fbb000"></stop>
+                        </linearGradient>
+                        <path fill="url(#G0Jpwzc9gkuJdD7CvJwJVe_sop9ROXku5bb_gr5)"
+                            d="M28.105,39.803	c-1.3-1.876-1.208-3.284,0.576-5.038c1.784-1.754,2.822-4.32,2.822-4.32s0.388-1.49,1.271-1.353	c0.883,0.137,1.532,2.364-0.318,3.727c-1.85,1.362,0.368,2.288,1.08,1.008c0.712-1.279,2.656-4.568,3.664-5.197	c1.008-0.629,1.717-0.277,1.48,1.02c-0.238,1.297-4.452,4.439-4.042,5.119c0.41,0.68,1.855-0.799,1.855-0.799	S41.016,29.92,42,30.975c0.984,1.055-0.747,1.939-3.214,3.409c-2.468,1.469-2.659,1.858-2.309,2.414	c0.351,0.556,5.797-3.963,6.309-2.047c0.511,1.916-5.559,2.472-5.184,3.794c0.375,1.323,4.276-2.503,5.074-1.012	c0.798,1.491-5.505,3.243-5.556,3.256C35.083,41.308,29.912,42.409,28.105,39.803z">
+                        </path>
+                        <linearGradient id="G0Jpwzc9gkuJdD7CvJwJVf_sop9ROXku5bb_gr6" x1="25.391" x2="44.607" y1="34.962"
+                            y2="34.962" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#ff8100"></stop>
+                            <stop offset="1" stop-color="#ff8100"></stop>
+                        </linearGradient>
+                        <path fill="url(#G0Jpwzc9gkuJdD7CvJwJVf_sop9ROXku5bb_gr6)"
+                            d="M38.014,26.511	c0.759,0,1.437,0.31,1.911,0.872c0.293,0.348,0.598,0.909,0.623,1.749c0.318-0.091,0.624-0.142,0.91-0.142	c0.727,0,1.383,0.277,1.847,0.78c0.596,0.645,0.861,1.438,0.746,2.232c-0.055,0.378-0.182,0.717-0.372,1.03	c0.4,0.322,0.695,0.77,0.838,1.309c0.112,0.423,0.226,1.303-0.371,2.209c0.038,0.059,0.074,0.121,0.107,0.184	c0.359,0.677,0.382,1.443,0.065,2.156c-0.481,1.08-1.675,1.932-3.994,2.845c-1.443,0.568-2.763,0.932-2.774,0.935	c-1.907,0.492-3.632,0.741-5.126,0.741c-2.745,0-4.71-0.835-5.841-2.483c-1.82-2.653-1.56-5.08,0.795-7.419	c1.303-1.294,2.17-3.203,2.35-3.622c0.364-1.24,1.326-2.619,2.925-2.619h0c0.135,0,0.271,0.011,0.405,0.032	c0.7,0.109,1.313,0.51,1.75,1.113c0.472-0.583,0.931-1.047,1.346-1.309C36.781,26.711,37.406,26.511,38.014,26.511z M38.014,28.375	c-0.239,0-0.531,0.101-0.853,0.304c-1,0.63-2.93,3.927-3.636,5.209c-0.237,0.43-0.641,0.611-1.006,0.611	c-0.723,0-1.287-0.714-0.066-1.622c1.837-1.366,1.192-3.598,0.316-3.735c-0.038-0.006-0.076-0.009-0.113-0.009	c-0.797,0-1.149,1.365-1.149,1.365s-1.031,2.572-2.801,4.33c-1.77,1.758-1.862,3.17-0.572,5.05c0.88,1.282,2.565,1.45,4.291,1.45	c1.791,0,3.629-0.314,4.658-0.579c0.051-0.013,6.303-1.652,5.511-3.147c-0.133-0.251-0.353-0.352-0.629-0.352	c-1.116,0-3.146,1.65-4.018,1.65c-0.195,0-0.34-0.15-0.397-0.351c-0.388-1.389,5.661-1.815,5.153-3.735	c-0.09-0.34-0.332-0.478-0.674-0.477c-1.475,0-4.783,2.577-5.476,2.577c-0.053,0-0.091-0.015-0.112-0.048	c-0.347-0.557-0.187-1.011,2.261-2.484c2.449-1.473,4.198-2.295,3.22-3.352c-0.112-0.122-0.272-0.176-0.466-0.176	c-1.487,0-4.999,3.177-4.999,3.177s-0.948,0.98-1.521,0.98c-0.132,0-0.244-0.052-0.32-0.179c-0.406-0.681,3.776-3.831,4.012-5.13	C38.789,28.821,38.517,28.375,38.014,28.375z">
+                        </path>
+                        <linearGradient id="G0Jpwzc9gkuJdD7CvJwJVg_sop9ROXku5bb_gr7" x1="17.867" x2="30.099" y1="26.353"
+                            y2="26.353" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#41474a"></stop>
+                            <stop offset="1" stop-color="#323538"></stop>
+                        </linearGradient>
+                        <path fill="url(#G0Jpwzc9gkuJdD7CvJwJVg_sop9ROXku5bb_gr7)"
+                            d="M30.099,24.186	c0-2.109-2.735,1.105-6.116,1.119c-3.381-0.014-6.116-3.228-6.116-1.119c0,1.398,0.669,3.672,2.465,5.051	c0.357-1.23,2.322-2.215,2.603-2.074c0.4,0.201,0.377,0.76,1.048,1.252c0.671-0.492,0.648-1.05,1.048-1.252	c0.281-0.141,2.245,0.844,2.602,2.074C29.43,27.857,30.099,25.584,30.099,24.186L30.099,24.186z">
+                        </path>
+                        <linearGradient id="G0Jpwzc9gkuJdD7CvJwJVh_sop9ROXku5bb_gr8" x1="20.333" x2="27.634" y1="28.782"
+                            y2="28.782" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#f52537"></stop>
+                            <stop offset="1" stop-color="#c8202c"></stop>
+                        </linearGradient>
+                        <path fill="url(#G0Jpwzc9gkuJdD7CvJwJVh_sop9ROXku5bb_gr8)"
+                            d="M25.031,27.163	c-0.4,0.201-0.377,0.76-1.048,1.252c-0.67-0.492-0.648-1.05-1.048-1.252c-0.281-0.141-2.245,0.844-2.602,2.074	c0.908,0.697,2.105,1.166,3.649,1.178c0,0,0.001,0,0.001,0c0,0,0.001,0,0.001,0c1.544-0.011,2.741-0.48,3.649-1.178	C27.277,28.007,25.312,27.021,25.031,27.163L25.031,27.163z">
+                        </path>
+                        <linearGradient id="G0Jpwzc9gkuJdD7CvJwJVi_sop9ROXku5bb_gr9" x1="33.371" x2="36.401" y1="19.739"
+                            y2="19.739" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#ff8100"></stop>
+                            <stop offset="1" stop-color="#ff8100"></stop>
+                        </linearGradient>
+                        <path fill="url(#G0Jpwzc9gkuJdD7CvJwJVi_sop9ROXku5bb_gr9)"
+                            d="M34.886,21.254	c0.837,0,1.515-0.678,1.515-1.515c0-0.837-0.678-1.515-1.515-1.515c-0.837,0-1.515,0.678-1.515,1.515	C33.371,20.576,34.05,21.254,34.886,21.254z">
+                        </path>
+                        <linearGradient id="G0Jpwzc9gkuJdD7CvJwJVj_sop9ROXku5bb_gr10" x1="11.541" x2="14.571"
+                            y1="19.739" y2="19.739" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#ff8100"></stop>
+                            <stop offset="1" stop-color="#ff8100"></stop>
+                        </linearGradient>
+                        <path fill="url(#G0Jpwzc9gkuJdD7CvJwJVj_sop9ROXku5bb_gr10)"
+                            d="M13.056,21.254	c0.837,0,1.515-0.678,1.515-1.515c0-0.837-0.678-1.515-1.515-1.515c-0.837,0-1.515,0.678-1.515,1.515	C11.541,20.576,12.219,21.254,13.056,21.254z">
+                        </path>
+                        <linearGradient id="G0Jpwzc9gkuJdD7CvJwJVk_sop9ROXku5bb_gr11" x1="27.53" x2="32.24" y1="18.015"
+                            y2="18.015" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#41474a"></stop>
+                            <stop offset="1" stop-color="#323538"></stop>
+                        </linearGradient>
+                        <path fill="url(#G0Jpwzc9gkuJdD7CvJwJVk_sop9ROXku5bb_gr11)"
+                            d="M29.545,19.08	c0.6,0.211,0.839,1.442,1.445,1.12c1.148-0.609,1.584-2.031,0.974-3.176c-0.611-1.145-2.036-1.58-3.185-0.971	c-1.148,0.609-1.584,2.031-0.974,3.176C28.094,19.77,29.009,18.891,29.545,19.08z">
+                        </path>
+                        <linearGradient id="G0Jpwzc9gkuJdD7CvJwJVl_sop9ROXku5bb_gr12" x1="15.757" x2="20.467"
+                            y1="18.015" y2="18.015" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#41474a"></stop>
+                            <stop offset="1" stop-color="#323538"></stop>
+                        </linearGradient>
+                        <path fill="url(#G0Jpwzc9gkuJdD7CvJwJVl_sop9ROXku5bb_gr12)"
+                            d="M18.451,19.08	c-0.6,0.211-0.839,1.442-1.445,1.12c-1.148-0.609-1.584-2.031-0.974-3.176c0.611-1.145,2.036-1.58,3.185-0.971	c1.148,0.609,1.584,2.031,0.974,3.176C19.903,19.77,18.988,18.891,18.451,19.08z">
+                        </path>
+                    </svg>
+                </a>
+                <!-- Website (Globe Icon) -->
+                <a href="#" id="websiteLink" class="hover:text-cyan-500" title="Website">
+                    <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg"
+                        xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 122.88 122.88"
+                        style="enable-background:new 0 0 122.88 122.88" class="w-6 h-6" xml:space="preserve">
+                        <style type="text/css">
+                            .st0 {
+                                fill-rule: evenodd;
+                                clip-rule: evenodd;
+                                fill: #A1E367;
+                            }
+
+                            .st1 {
+                                fill-rule: evenodd;
+                                clip-rule: evenodd;
+                                fill: #2394E0;
+                            }
+                        </style>
+                        <g>
+                            <path class="st1"
+                                d="M61.44,0c33.93,0,61.44,27.51,61.44,61.44c0,33.93-27.51,61.44-61.44,61.44C27.51,122.88,0,95.37,0,61.44 C0,27.51,27.51,0,61.44,0L61.44,0L61.44,0z" />
+                            <path class="st0"
+                                d="M11.76,93.18c-3.62-5.49-6.33-11.64-7.92-18.23l10.82,5.22l0.06,3.23c0,1.19-2.02,3.71-2.67,4.67L11.76,93.18 L11.76,93.18L11.76,93.18z M78.31,6.5c20.62,6.85,36.09,25,39.07,47.1l-1.95-0.21c-0.35,1.5-0.67,1.53-0.67,3.33c0,1.59,2,2.65,2,6 c0,0.9-2.11,2.69-2.2,3.01l-3.13-3.67v4.67l-0.47-0.02l-0.84-8.62l-1.75,0.55l-2.08-6.41l-6.85,7.16l-0.08,5.24l-2.24,1.5 l-2.38-13.44l-1.42,1.04l-3.22-4.35l-4.81,0.14l-1.84-2.11l-1.89,0.52l-3.71-4.25l-0.72,0.49l2.3,5.88h2.67v-1.33l1.33,0 c0.96,2.66,2,1.08,2,2.67c0,5.55-6.85,9.63-11.34,10.67c0.24,1,0.15,2,1.33,2c2.51,0,1.26-0.44,4-0.67 c-0.13,5.67-6.5,12.44-9.22,16.65l1.22,8.69c0.32,1.89-3.92,3.88-5.36,6.01l0.69,3.33l-1.95,0.79c-0.34,3.42-3.66,7.21-7.39,7.21 h-4c0-4.68-3.34-11.37-3.34-14.68c0-2.81,1.33-3.19,1.33-6.67c0-3.22-3.33-7.83-3.33-8.67v-5.34H45.4c-0.4-1.49-0.15-2-2-2h-0.67 c-2.91,0-2.42,1.33-5.34,1.33h-2.67c-2.41,0-6.67-7.72-6.67-8.67v-8c0-3.45,3.16-7.21,5.34-8.67v-3.33l3-3.05l1.67-0.28 c3.58,0,3.15-2,5.34-2l6,0v4.67l6.6,2.82l0.62-2.85c2.99,0.7,3.77,2.03,7.45,2.03h1.33c2.53,0,2.67-3.36,2.67-6l-5.34,0.53 l-2.33-5.06l-2.31,0.61c0.42,1.81,0.64,1.06,0.64,2.59c0,0.9-0.74,1-1.34,1.33l-2.31-5.86l-4.97-3.55l-0.66,0.65l4.23,4.45 c-0.56,1.6-0.63,6.21-2.96,2.98l2.18-1.05l-5.44-5.7l-3.26,1.27l-3.22,3.08c-0.34,2.48-1.01,3.73-3.61,3.73 c-1.73,0-0.69-0.45-3.34-0.67v-6.67h6l-1.95-4.44l-0.72,0.44v-1.34l9.75-4.49c-0.18-1.4-0.41-0.65-0.41-2.18 c0-0.09,0.65-1.32,0.67-1.34l2.52,1.57l-0.6-2.87l-3.89,0.8l-0.72-3.49c3.08-1.62,9.87-7.34,12.03-7.34l2,0 c2.11,0,7.75,2.08,8.67,3.33l-5.35-0.54l3.97,3.27l0.38-1.4l2.96-0.81l0.04-1.85h1.34v2L78.31,6.5L78.31,6.5L78.31,6.5z" />
+                        </g>
+                    </svg>
+                </a>
+                <!-- Google Colab (Google G Icon) -->
+                <a href="#" id="colabLink" class="hover:text-cyan-500" title="Google Colab">
+                    <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" class="w-6 h-6" viewBox="0 0 48 48">
+                        <path fill="#ffb300"
+                            d="M33.5,10C26.044,10,20,16.044,20,23.5C20,30.956,26.044,37,33.5,37S47,30.956,47,23.5	C47,16.044,40.956,10,33.5,10z M33.5,30c-3.59,0-6.5-2.91-6.5-6.5s2.91-6.5,6.5-6.5s6.5,2.91,6.5,6.5S37.09,30,33.5,30z">
+                        </path>
+                        <path fill="#ffb300"
+                            d="M19.14,28.051l0-0.003C17.96,29.252,16.318,30,14.5,30C10.91,30,8,27.09,8,23.5s2.91-6.5,6.5-6.5	c1.83,0,3.481,0.759,4.662,1.976l3.75-6.024C20.604,11.109,17.683,10,14.5,10C7.044,10,1,16.044,1,23.5C1,30.956,7.044,37,14.5,37	c3.164,0,6.067-1.097,8.369-2.919L19.14,28.051z">
+                        </path>
+                        <path fill="#f57c00"
+                            d="M8,23.5c0-1.787,0.722-3.405,1.889-4.58l-4.855-5.038C2.546,16.33,1,19.733,1,23.5	c0,3.749,1.53,7.14,3.998,9.586l4.934-4.964C8.74,26.944,8,25.309,8,23.5z">
+                        </path>
+                        <path fill="#f57c00"
+                            d="M38.13,18.941C39.285,20.114,40,21.723,40,23.5c0,3.59-2.91,6.5-6.5,6.5	c-1.826,0-3.474-0.755-4.655-1.968l-4.999,4.895C26.298,35.437,29.714,37,33.5,37C40.956,37,47,30.956,47,23.5	c0-3.684-1.479-7.019-3.871-9.455L38.13,18.941z">
+                        </path>
+                    </svg>
+                </a>
+                <!-- Paper (Document Icon) -->
+                <a href="#" id="paperLink" class="hover:text-cyan-500" title="Paper">
+                    <svg id="logomark" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 17.732 24.269">
+                        <g id="tiny">
+                            <path
+                                d="M573.549,280.916l2.266,2.738,6.674-7.84c.353-.47.52-.717.353-1.117a1.218,1.218,0,0,0-1.061-.748h0a.953.953,0,0,0-.712.262Z"
+                                transform="translate(-566.984 -271.548)" fill="#bdb9b4" />
+                            <path
+                                d="M579.525,282.225l-10.606-10.174a1.413,1.413,0,0,0-.834-.5,1.09,1.09,0,0,0-1.027.66c-.167.4-.047.681.319,1.206l8.44,10.242h0l-6.282,7.716a1.336,1.336,0,0,0-.323,1.3,1.114,1.114,0,0,0,1.04.69A.992.992,0,0,0,571,293l8.519-7.92A1.924,1.924,0,0,0,579.525,282.225Z"
+                                transform="translate(-566.984 -271.548)" fill="#b31b1b" />
+                            <path
+                                d="M584.32,293.912l-8.525-10.275,0,0L573.53,280.9l-1.389,1.254a2.063,2.063,0,0,0,0,2.965l10.812,10.419a.925.925,0,0,0,.742.282,1.039,1.039,0,0,0,.953-.667A1.261,1.261,0,0,0,584.32,293.912Z"
+                                transform="translate(-566.984 -271.548)" fill="#bdb9b4" />
+                        </g>
+                    </svg>
+                </a>
+            </div>
+
+            <!-- Download Buttons -->
+            <div class="flex justify-center space-x-4 mb-6">
+                <a href="#" id="winDownload"
+                    class="flex items-center px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-md">
+                    <!-- Windows Logo SVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z" />
+                    </svg>
+                    <span class="ml-2">Download</span>
+                </a>
+                <a href="#" id="macDownload"
+                    class="flex items-center px-4 py-2 bg-black hover:bg-black-900 text-white rounded-md">
+                    <!-- Apple Logo SVG -->
+                    <svg fill="#FFFFFF" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6"
+                        xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 22.773 22.773" xml:space="preserve">
+                        <g>
+                            <g>
+                                <path d="M15.769,0c0.053,0,0.106,0,0.162,0c0.13,1.606-0.483,2.806-1.228,3.675c-0.731,0.863-1.732,1.7-3.351,1.573
+			c-0.108-1.583,0.506-2.694,1.25-3.561C13.292,0.879,14.557,0.16,15.769,0z" />
+                                <path
+                                    d="M20.67,16.716c0,0.016,0,0.03,0,0.045c-0.455,1.378-1.104,2.559-1.896,3.655c-0.723,0.995-1.609,2.334-3.191,2.334
+			c-1.367,0-2.275-0.879-3.676-0.903c-1.482-0.024-2.297,0.735-3.652,0.926c-0.155,0-0.31,0-0.462,0
+			c-0.995-0.144-1.798-0.932-2.383-1.642c-1.725-2.098-3.058-4.808-3.306-8.276c0-0.34,0-0.679,0-1.019
+			c0.105-2.482,1.311-4.5,2.914-5.478c0.846-0.52,2.009-0.963,3.304-0.765c0.555,0.086,1.122,0.276,1.619,0.464
+			c0.471,0.181,1.06,0.502,1.618,0.485c0.378-0.011,0.754-0.208,1.135-0.347c1.116-0.403,2.21-0.865,3.652-0.648
+			c1.733,0.262,2.963,1.032,3.723,2.22c-1.466,0.933-2.625,2.339-2.427,4.74C17.818,14.688,19.086,15.964,20.67,16.716z" />
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                            <g>
+                            </g>
+                        </g>
+                    </svg>
+                    <span class="ml-2">Download</span>
+                </a>
+            </div>
+
+            <!-- App Details -->
+            <div id="descriptionSection" class="bg-gray-800 p-4 rounded-lg mb-6">
+                <h2 class="text-xl font-semibold text-cyan-500 mb-2">Description</h2>
+                <p id="appDescription" class="text-lg"></p>
+            </div>
+
+            <!-- System Requirements -->
+            <div id="systemSection" class="bg-gray-800 p-4 rounded-lg mb-6">
+                <h2 class="text-xl font-semibold text-cyan-500 mb-2">System Requirements</h2>
+                <p id="requirementsText" class="text-sm"></p>
+            </div>
+        </div>
+    </section>
+
+    <section class=" bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4">
+            <!-- Heading: This will be updated after search -->
+            <h2 id="app-heading" class="text-2xl md:text-3xl font-bold text-cyan-500 mb-4 text-center">Realated Apps
+            </h2>
+            <!-- 7-column grid for app cards -->
+            <div id="app-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
+                <!-- App cards will be injected here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 py-4">
+        <div class="max-w-7xl mx-auto text-center text-gray-500">
+            &copy; 2025 AI Bazaar. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Carousel JavaScript -->
+    <script>
+        const slides = document.querySelectorAll('.carousel-slide');
+        let currentSlide = 0;
+        function setSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.style.opacity = i === index ? '1' : '0';
+            });
+            currentSlide = index;
+        }
+        function nextSlide() {
+            setSlide((currentSlide + 1) % slides.length);
+        }
+        function previousSlide() {
+            setSlide((currentSlide - 1 + slides.length) % slides.length);
+        }
+        // Auto slide every 5 seconds
+        setInterval(nextSlide, 5000);
+        // Add wheel event for manual slide control (optional)
+        const carouselSection = document.getElementById('carousel-section');
+        let scrollTimeout = null;
+        carouselSection.addEventListener('wheel', function (e) {
+            e.preventDefault();
+            if (scrollTimeout) return;
+            if (e.deltaY > 0) {
+                nextSlide();
+            } else {
+                previousSlide();
+            }
+            scrollTimeout = setTimeout(() => scrollTimeout = null, 100);
+        });
+    </script>
+
+    <!-- JavaScript for App Details -->
+    <script>
+        // Get the app ID from the query string (e.g., ?id=15)
+        const params = new URLSearchParams(window.location.search);
+        const appId = params.get('id');
+
+        // URL to your JSON file (raw URL on GitHub)
+        const dataUrl = "https://raw.githubusercontent.com/sudo-subho/AI-bazaar/main/data/data.json";
+
+        fetch(dataUrl)
+            .then(response => response.json())
+            .then(data => {
+                // Find the app with the matching id
+                const app = data.find(item => item.id.toString() === appId);
+                if (app) {
+                    // Set the app logo in the overlay (centered in the carousel)
+                    document.getElementById('appLogo').src = app.logo;
+                    // Set the app name
+                    document.getElementById('appName').textContent = app.name;
+                    // Populate the rest of the details
+                    document.getElementById('appDescription').textContent = app.description;
+                    document.getElementById('requirementsText').textContent = app.system_requirements;
+                    document.getElementById('installCommand').textContent = app.install_command;
+                    document.getElementById('startCommand').textContent = app.start_command;
+                    // Set download button links if provided
+                    if (app.links) {
+                        // For download buttons, ensure your JSON includes keys for these links.
+                        document.getElementById('githubLink').href = app.links.github || "#";
+                        document.getElementById('huggingfaceLink').href = app.links.huggingface || "#";
+                        document.getElementById('websiteLink').href = app.links.website || "#";
+                        document.getElementById('colabLink').href = app.links.colab || "#";
+                        document.getElementById('paperLink').href = app.links.paper || "#";
+                    }
+                } else {
+                    document.body.innerHTML = '<p class="text-center py-10">App not found.</p>';
+                }
+            })
+            .catch(error => {
+                console.error("Error loading app details:", error);
+            });
+    </script>
+
+    <script>
+        // Use the raw URL to your JSON file on GitHub
+        const dataUrls = "https://raw.githubusercontent.com/sudo-subho/AI-bazaar/main/data/data.json";
+
+        fetch(dataUrls)
+            .then(response => response.json())
+            .then(data => {
+                const appGrid = document.getElementById("app-grid");
+                // Only generate the first 7 apps
+                data.slice(0, 7).forEach(app => {
+                    // Generate an app card using a template literal.
+                    // The app name is forced to a width of 14ch and truncated.
+                    const card = `
+            <a href="/app.html?id=${app.id}" class="block">
+            <div class="w-40 flex-shrink-0 rounded-lg p-4 text-center transform transition duration-300 hover:scale-105">
+              <img src="${app.logo}" alt="${app.name}"
+                class="w-128 h-128 mx-auto mb-2 rounded-lg shadow-lg shadow-cyan-500/50" />
+              <h3 class="w-[14ch] truncate text-sm font-semibold text-white">${app.name}</h3>
+              <p class="flex items-center gap-1 text-cyan-500 text-xs justify-center">
+                ${app.size}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
+                  <path fill-rule="evenodd"
+                    d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-.53 14.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V8.25a.75.75 0 0 0-1.5 0v5.69l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3Z"
+                    clip-rule="evenodd" />
+                </svg>
+              </p>
+            </div>
+          </a>
+          `;
+                    appGrid.innerHTML += card;
+                });
+            })
+            .catch(error => {
+                console.error("Error loading app data:", error);
+            });
+    </script>
+
+
+
+</body>
+
+</html>
