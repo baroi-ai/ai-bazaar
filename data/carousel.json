@@ -1,37 +1,29 @@
 [
   {
-        "id": 5,
-        "title": "Baroi",
-        "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg5.jpg"
-    },
-  
-  {
-        "id": 4,
-        "title": "Hunyan 3d",
-        "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg4.jpg"
-    },
-
-  {
         "id": 3,
         "title": "Gamming",
         "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg3.jpg"
+        "button-title": "Know More",
+        "button-link": "https://kimoitv.com/title/50073/The-Vampire-Diaries.html",
+        "image": "https://images.unsplash.com/photo-1521747116042-5a810fda9664?fit=crop&w=1920&h=1080"
     },
   
     {
         "id": 2,
         "title": "Le chat",
         "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg2.jpg"
+        "button-title": "Join",
+        "button-link": "https://kimoitv.com/title/50073/The-Vampire-Diaries.html",
+        "image": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?fit=crop&w=1920&h=1080"
     },
 
   {
         "id": 1,
         "title": "Newsletter",
         "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "image": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bg.jpg"
+        "button-title": "Learn More",
+        "button-link": "https://kimoitv.com/title/50073/The-Vampire-Diaries.html",
+        "image": "https://images.unsplash.com/photo-1593642634443-44adaa06623a?fit=crop&w=1920&h=1080"
     }
 
 ]
