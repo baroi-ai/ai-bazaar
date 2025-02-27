@@ -30,11 +30,13 @@
     <nav class="bg-gray-900">
         <div class="max-w-7xl mx-auto px-4 h-16 grid grid-cols-3 items-center">
             <!-- Left: Brand Name -->
-            <div>
-                <a href="/ai-bazaar">
+            <a href="/">
+                <div class="flex items-center">
+                    <img style="height: 60px; width: 70px;" src="/logos.png" alt="AI Bazaar Logo">
                     <span class="text-cyan-500 font-bold text-xl">AI Bazaar</span>
-                </a>
-            </div>
+                </div>
+            </a>
+
             <div class="hidden md:flex justify-center">
                 <div class="flex">
                     <input id="searchInput" type="text" placeholder="Search..."
@@ -50,10 +52,10 @@
             </div>
             <!-- Right: Desktop Menu -->
             <div class="hidden md:flex justify-end space-x-4">
-                <a href="/ai-bazaar" class="text-white hover:text-cyan-500">Home</a>
-                <a href="#" class="text-white hover:text-cyan-500">Docs</a>
-                <a href="#" class="text-white hover:text-cyan-500">About</a>
-                <a href="#" class="text-white hover:text-cyan-500">Support</a>
+                <a href="/" class="text-white hover:text-cyan-500">Home</a>
+                <a href="/support.html" class="text-white hover:text-cyan-500">Social</a>
+                <a href="/about.html" class="text-white hover:text-cyan-500">About</a>
+                <a href="/support.html" class="text-white hover:text-cyan-500">Support</a>
             </div>
             <!-- Mobile Menu Button -->
             <div class="md:hidden col-span-3 flex justify-end">
@@ -68,73 +70,93 @@
         </div>
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="md:hidden hidden bg-gray-700 px-2 pt-2 pb-3 space-y-1">
-            <a href="#" class="block text-white hover:text-cyan-500">Home</a>
-            <a href="#" class="block text-white hover:text-cyan-500">Features</a>
-            <a href="#" class="block text-white hover:text-cyan-500">Apps</a>
-            <a href="#" class="block text-white hover:text-cyan-500">Contact</a>
+            <a href="/" class="text-white hover:text-cyan-500">Home</a>
+            <a href="/support.html" class="text-white hover:text-cyan-500">Social</a>
+            <a href="/about.html" class="text-white hover:text-cyan-500">About</a>
+            <a href="/support.html" class="text-white hover:text-cyan-500">Support</a>
         </div>
     </nav>
 
-    <!-- Carousel Section (give it an ID) -->
     <section id="carousel-section" class="relative h-[50vh] overflow-hidden bg-gray-900">
-        <!-- Slide 1 -->
-        <div class="carousel-slide absolute inset-0 transition-opacity duration-1000 opacity-100">
-            <img src="https://images.unsplash.com/photo-1593642634443-44adaa06623a?fit=crop&w=1920&h=1080" alt="Slide 1"
-                class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div class="text-center">
-                    <h1 class="text-4xl md:text-6xl truncate font-bold text-cyan-500 mb-4">Install AI Models In One
-                        Click</h1>
-                    <p class="text-lg md:text-xl mb-8">Explore the amazing world of web development.</p>
-                    <button
-                        class="bg-cyan-500 hover:bg-cyan-600 text-gray-900 font-semibold py-3 px-6 shadow-lg shadow-cyan-500/50 rounded-full">
-                        Learn More
-                    </button>
-                </div>
-            </div>
-        </div>
-        <!-- Slide 2 -->
-        <div class="carousel-slide absolute inset-0 transition-opacity duration-1000 opacity-0">
-            <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?fit=crop&w=1920&h=1080" alt="Slide 2"
-                class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div class="text-center">
-                    <h1 class="text-4xl md:text-6xl font-bold text-cyan-500 mb-4">Discover New Horizons</h1>
-                    <p class="text-lg md:text-xl mb-8">Innovation meets creativity in every click.</p>
-                    <button
-                        class="bg-cyan-500 hover:bg-cyan-600 text-gray-900 font-semibold shadow-lg shadow-cyan-500/50 py-3 px-6 rounded-full">
-                        Get Started
-                    </button>
-                </div>
-            </div>
-        </div>
-        <!-- Slide 3 -->
-        <div class="carousel-slide absolute inset-0 transition-opacity duration-1000 opacity-0">
-            <img src="https://images.unsplash.com/photo-1521747116042-5a810fda9664?fit=crop&w=1920&h=1080" alt="Slide 3"
-                class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div class="text-center">
-                    <h1 class="text-4xl md:text-6xl font-bold text-cyan-500 mb-4">Transform Your Ideas</h1>
-                    <p class="text-lg md:text-xl mb-8">Let your imagination run wild with endless possibilities.</p>
-                    <button
-                        class="bg-cyan-500 hover:bg-cyan-600 text-gray-900 font-semibold py-3 px-6 shadow-lg shadow-cyan-500/50 rounded-full">
-                        Join Now
-                    </button>
-                </div>
-            </div>
-        </div>
-        <!-- Carousel Indicators -->
-        <div class="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
-            <button class="w-3 h-3 bg-white rounded-full" onclick="setSlide(0)"></button>
-            <button class="w-3 h-3 bg-white rounded-full" onclick="setSlide(1)"></button>
-            <button class="w-3 h-3 bg-white rounded-full" onclick="setSlide(2)"></button>
-        </div>
+        <!-- Slides and indicators will be injected here -->
     </section>
 
     <script>
-        const slides = document.querySelectorAll('.carousel-slide');
-        let currentSlide = 0;
+        // Fetch the carousel JSON data from GitHub's raw URL
+        fetch('https://raw.githubusercontent.com/baroi-ai/ai-bazaar/main/data/carousel.json')
+            .then(response => response.json())
+            .then(slidesData => {
+                const carouselSection = document.getElementById('carousel-section');
+                carouselSection.innerHTML = ''; // Clear any existing content
 
+                // Create slides based on fetched data
+                slidesData.forEach((slide, index) => {
+                    const slideDiv = document.createElement('div');
+                    slideDiv.classList.add('carousel-slide');
+                    slideDiv.style.position = 'absolute';
+                    slideDiv.style.inset = '0';
+                    slideDiv.style.transition = 'opacity 1s';
+                    slideDiv.style.opacity = index === 0 ? '1' : '0';
+                    slideDiv.innerHTML = `
+                <img src="${slide.image}" alt="Slide ${index + 1}" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <div class="text-center">
+                        <h1 class="text-4xl md:text-6xl font-bold text-cyan-500 mb-4">${slide.title}</h1>
+                        <p class="text-lg md:text-xl mb-8">${slide.description}</p>
+                        <a href="${slide['button-link']}" target="_blank" class="bg-cyan-500 hover:bg-cyan-600 text-gray-900 font-semibold py-3 px-6 shadow-lg shadow-cyan-500/50 rounded-full">
+                          ${slide['button-title']}
+                        </a>
+                    </div>
+                </div>
+              `;
+                    carouselSection.appendChild(slideDiv);
+                });
+
+                // Create carousel indicators
+                const indicatorsDiv = document.createElement('div');
+                indicatorsDiv.className = "absolute bottom-4 left-0 right-0 flex justify-center space-x-2";
+                slidesData.forEach((_, index) => {
+                    const indicator = document.createElement('button');
+                    indicator.className = "w-3 h-3 bg-white rounded-full";
+                    indicator.addEventListener('click', () => setSlide(index));
+                    indicatorsDiv.appendChild(indicator);
+                });
+                carouselSection.appendChild(indicatorsDiv);
+
+                // Initialize carousel functions once slides are loaded
+                initializeCarousel();
+            })
+            .catch(error => console.error('Error fetching carousel data:', error));
+
+        let currentSlide = 0;
+        let slides; // will hold the carousel slides
+        let scrollTimeout = null;
+
+        // Function to initialize carousel after slides are created
+        function initializeCarousel() {
+            slides = document.querySelectorAll('.carousel-slide');
+
+            // Auto slide every 5 seconds
+            setInterval(nextSlide, 5000);
+
+            // Add a wheel event on the carousel container
+            const carouselSection = document.getElementById('carousel-section');
+            carouselSection.addEventListener('wheel', function (e) {
+                // Prevent default page scroll when hovering over carousel
+                e.preventDefault();
+                if (scrollTimeout) return; // throttle repeated scroll events
+
+                if (e.deltaY > 0) {
+                    nextSlide();
+                } else {
+                    previousSlide();
+                }
+
+                scrollTimeout = setTimeout(() => scrollTimeout = null, 100);
+            });
+        }
+
+        // Function to set a particular slide
         function setSlide(index) {
             slides.forEach((slide, i) => {
                 slide.style.opacity = i === index ? '1' : '0';
@@ -142,37 +164,17 @@
             currentSlide = index;
         }
 
+        // Go to next slide
         function nextSlide() {
             setSlide((currentSlide + 1) % slides.length);
         }
 
+        // Go to previous slide
         function previousSlide() {
             setSlide((currentSlide - 1 + slides.length) % slides.length);
         }
-
-        // Auto slide every 5 seconds
-        setInterval(nextSlide, 5000);
-
-        // Add a wheel event on the carousel container
-        const carouselSections = document.querySelector('section'); // assuming it's the only section
-        let scrollTimeout = null; // throttle repeated scroll events
-
-        carouselSections.addEventListener('wheel', function (e) {
-            // Prevent default page scroll when hovering over carousel
-            e.preventDefault();
-            if (scrollTimeout) return; // throttle: ignore if a scroll was recently processed
-
-            // Check scroll direction: down (next) or up (previous)
-            if (e.deltaY > 0) {
-                nextSlide();
-            } else {
-                previousSlide();
-            }
-
-            // Set a timeout (e.g., 1 second) before allowing another change
-            scrollTimeout = setTimeout(() => scrollTimeout = null, 100);
-        });
     </script>
+
 
 
     <!-- App Sections -->
@@ -231,7 +233,7 @@
 
     <script>
         // Use the raw URL to your JSON file on GitHub
-        const dataUrls = "https://raw.githubusercontent.com/sudo-subho/AI-bazaar/main/data/data.json";
+        const dataUrls = "https://raw.githubusercontent.com/baroi-ai/AI-bazaar/main/data/data.json";
 
         fetch(dataUrls)
             .then(response => response.json())
@@ -241,7 +243,7 @@
                     // Generate an app card using a template literal.
                     // The app name is forced to a width of 14ch and truncated.
                     const card = `
-             <a href="/ai-bazaar/app.html?id=${app.id}" class="block">
+             <a href="/app.html?id=${app.id}" class="block">
             <div class="w-40 flex-shrink-0 rounded-lg p-4 text-center transform transition duration-300 hover:scale-105">
               <img src="${app.logo}" alt="${app.name}"
                 class="w-128 h-128 mx-auto mb-2 rounded-lg shadow-lg shadow-cyan-500/50" />
@@ -268,7 +270,7 @@
     <!-- JavaScript for Search Functionality -->
     <script>
         // Set the URL to your data.json (raw URL on GitHub)
-        const dataUrl = "https://raw.githubusercontent.com/sudo-subho/AI-bazaar/main/data/data.json";
+        const dataUrl = "https://raw.githubusercontent.com/baroi-ai/AI-bazaar/main/data/data.json";
 
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
@@ -285,7 +287,7 @@
             }
             apps.forEach(app => {
                 const card = `
-           <a href="/ai-bazaar/app.html?id=${app.id}" class="block">
+           <a href="/app.html?id=${app.id}" class="block">
             <div class="w-40 flex-shrink-0 rounded-lg p-4 text-center transform transition duration-300 hover:scale-105">
               <img src="${app.logo}" alt="${app.name}"
                 class="w-128 h-128 mx-auto mb-2 rounded-lg shadow-lg shadow-cyan-500/50" />
