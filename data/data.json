@@ -255,21 +255,21 @@
 
     {
         "id": 2,
-        "name": "Bolt.diy",
-        "size": "3GB",
-        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/bolt.png",
+        "name": "Kokoro TTS",
+        "size": "700MB",
+        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/kokoro-tts.webp",
         "version": "1.0",
-        "developer": "StackBlitz Labs",
+        "developer": "hexgrad",
         "update": "2025-11-01",
-        "description": "Welcome to bolt.diy, the official open source version of Bolt.new (previously known as oTToDev and bolt.new ANY LLM), which allows you to choose the LLM that you use for each prompt! Currently, you can use OpenAI, Anthropic, Ollama, OpenRouter, Gemini, LMStudio, Mistral, xAI, HuggingFace, DeepSeek, or Groq models - and it is easily extended to use any other model supported by the Vercel AI SDK! See the instructions below for running this locally and extending it to include more models.",
-        "system_requirements": "OS: Linux; RAM: 4GB minimum; Disk Space: 3GB available",
+        "description": "A CLI text-to-speech tool using the Kokoro model, supporting multiple languages, voices (with blending), and various input formats including EPUB books and PDF documents.",
+        "system_requirements": "OS: Windows 10, 11 [64 bit] ; Disk Space: 3GB available",
         "links": {
-          "github": "https://github.com/stackblitz-labs/bolt.diy",
-          "website": "https://stackblitz-labs.github.io/bolt.diy/",
-          "huggingface": "https://huggingface.co/spaces/aproli90/bolt.diy"
+          "github": "https://github.com/PierrunoYT/Kokoro-TTS-Local",
+          "website": "https://kokorotts.net/",
+          "huggingface": "https://huggingface.co/spaces/hexgrad/Kokoro-TTS"
         },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
+        "windows_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/kokoro-tts/Kokoro-TTS-WIN-64-Installer.exe",
+        "mac_link": ""
     },
 
     {
