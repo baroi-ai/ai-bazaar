@@ -156,8 +156,8 @@
     {
         "id": 7,
         "name": "Ollama",
-        "size": "3GB",
-        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/ollama.png",
+        "size": "1GB",
+        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/ollama.webp",
         "version": "1.0",
         "developer": "Ollama",
         "update": "2025-11-01",
@@ -168,8 +168,8 @@
           "website": "https://ollama.com/",
           "huggingface": "https://huggingface.co/docs/hub/en/ollama"
         },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
+        "windows_link": "https://ollama.com/download/OllamaSetup.exe",
+        "mac_link": "https://ollama.com/download/Ollama-darwin.zip"
     },
 
     {
