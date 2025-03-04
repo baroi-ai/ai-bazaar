@@ -275,19 +275,19 @@
     {
       "id": 1,
       "name": "Browser Use",
-      "size": "2.5GB",
+      "size": "367MB",
       "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/browser-use.png",
-      "version": "1.0.0",
+      "version": "0.1.37",
       "developer": "Zurich and San Francisco",
       "update": "2025-10-02",
       "description": "Browser-use is the easiest way to connect your AI agents with the browser.",
-      "system_requirements": "OS: Windows 10 or higher; RAM: 8GB minimum; Disk Space: 2GB available",
+      "system_requirements": "OS: Windows 10/11; RAM: 8GB minimum; Disk Space: 3GB available",
       "links": {
         "github": "https://github.com/browser-use/browser-use",
         "website": "https://browser-use.com/"
       },
-       "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-       "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
+       "windows_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/borwser-use/Browser-Use-WIN-64-Installer.exe",
+       "mac_link": ""
     }
   ]
   
