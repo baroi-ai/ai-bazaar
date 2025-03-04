@@ -175,13 +175,13 @@
     {
         "id": 6,
         "name": "Applio",
-        "size": "1.5GB",
+        "size": "3GB",
         "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/applio.webp",
         "version": "3.2.8",
         "developer": "IAHispano",
         "update": "2025-11-01",
         "description": "Applio is a powerful voice conversion tool focused on simplicity, quality, and performance. Whether you're an artist, developer, or researcher, Applio offers a straightforward platform for high-quality voice transformations. Its flexible design allows for customization through plugins and configurations, catering to a wide range of projects.",
-        "system_requirements": "at least an Nvidia RTX 2000 series graphics card or higher.",
+        "system_requirements": "Windows 10/11, 8GB RAM, 6GB Space ",
         "links": {
           "github": "https://github.com/IAHispano/Applio",
           "website": "https://applio.org/",
