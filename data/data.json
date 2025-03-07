@@ -1,11 +1,29 @@
 [
      {
+        "id": 7,
+        "name": "Comfyui",
+        "size": "150MB",
+        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/comfiui.webp",
+        "version": "0.4.28",
+        "developer": "comfyanonymous",
+        "update": "2025-7-03",
+        "description": "The most powerful and modular diffusion model GUI, api and backend with a graph/nodes interface.",
+        "system_requirements": "GPU: An NVIDIA GPU with at least 8 GB of VRAM. CPU: A modern processor like Intel Xeon E5 or i5, or Ryzen 5 or higher. RAM: 16 GB or more",
+        "links": {
+          "github": "https://github.com/comfyanonymous/ComfyUI",
+          "website":"www.comfy.org"
+        },
+        "windows_link": "https://www.comfy.org/download",
+        "mac_link": "https://www.comfy.org/download"
+    },
+     
+     {
         "id": 6,
         "name": "Invoke Community Edition",
         "size": "100MB",
         "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/invoke.webp",
         "version": "1.4",
-        "developer": "Face Fusion",
+        "developer": "Invoke AI",
         "update": "2025-7-03",
         "description": "Invoke is a leading creative engine built to empower professionals and enthusiasts alike. Generate and create stunning visual media using the latest AI-driven technologies. Invoke offers an industry leading web-based UI, and serves as the foundation for multiple commercial products.",
         "system_requirements": "least 8GB of RAM, a dedicated GPU with at least 3.5GB VRAM (16GB recommended).",
