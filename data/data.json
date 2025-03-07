@@ -1,178 +1,44 @@
 [
+     {
+        "id": 6,
+        "name": "Invoke Community Edition",
+        "size": "100MB",
+        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/facefusion.webp",
+        "version": "1.4",
+        "developer": "Face Fusion",
+        "update": "2025-7-03",
+        "description": "Invoke is a leading creative engine built to empower professionals and enthusiasts alike. Generate and create stunning visual media using the latest AI-driven technologies. Invoke offers an industry leading web-based UI, and serves as the foundation for multiple commercial products.",
+        "system_requirements": "least 8GB of RAM, a dedicated GPU with at least 3.5GB VRAM (16GB recommended).",
+        "links": {
+          "github": "https://github.com/invoke-ai/InvokeAI",
+          "huggingface":"https://huggingface.co/spaces/leonelhs/FaceFusion",
+          "website":"https://invoke-ai.github.io/InvokeAI/"
+        },
+        "windows_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/facefussion/FaceFusion-v3.1.1-WIN-64-Installer.exe",
+        "mac_link": ""
+    },
+    
     {
-        "id": 16,
+        "id": 5,
         "name": "Face Fusion",
-        "size": "7.8GB",
+        "size": "1.5GB",
         "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/facefusion.webp",
         "version": "3.1.1",
         "developer": "Face Fusion",
-        "update": "2025-11-01",
-        "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
+        "update": "2025-7-03",
+        "description": "Industry leading face manipulation platform",
+        "system_requirements": "a computer with a 64-bit processor, at least 8GB of RAM, and a GPU with at least 1GB of memory and optionally CUDA toolkit 11.8 if using a GPU.",
         "links": {
           "github": "https://github.com/facefusion/facefusion",
           "huggingface":"https://huggingface.co/spaces/leonelhs/FaceFusion",
           "website":"https://docs.facefusion.io/"
         },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
-    },
-    {
-        "id": 15,
-        "name": "Echomimic 2",
-        "size": "7.8GB",
-        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/antgroup-color.png",
-        "version": "2.0",
-        "developer": "Ant Group",
-        "update": "2025-11-01",
-        "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
-        "links": {
-          "github": "https://github.com/antgroup/echomimic_v2",
-          "huggingface":"https://huggingface.co/BadToBest/EchoMimicV2",
-          "website":"https://antgroup.github.io/ai/echomimic_v2/",
-          "paper":"https://arxiv.org/abs/2411.10061"
-        },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
+        "windows_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/facefussion/FaceFusion-v3.1.1-WIN-64-Installer.exe",
+        "mac_link": ""
     },
 
     {
-        "id": 14,
-        "name": "MFLUX",
-        "size": "7.8GB",
-        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/MFLUX.png",
-        "version": "1.0",
-        "developer": "Charaf",
-        "update": "2025-11-01",
-        "description": "MFLUX WebUI is a comprehensive interface for the MFLUX image generation system. It provides an intuitive way to interact with MFLUX models, offering both simple and advanced options for image generation, as well as support for ControlNet, LoRA integration, and image-to-image transformation.",
-        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
-        "links": {
-          "github": "https://github.com/CharafChnioune/MFLUX-WEBUI"
-        },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
-    },
-
-    {
-        "id": 13,
-        "name": "Ai comic factory",
-        "size": "3.8GB",
-        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/comic.jpg",
-        "version": "1.0",
-        "developer": "Julian BILCKE",
-        "update": "2025-11-01",
-        "description": "Generate comic panels using a LLM + SDXL.",
-        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
-        "links": {
-          "github": "https://github.com/jbilcke-hf/FacePoke",
-          "website":"https://aicomicfactory.app/",
-          "huggingface": "https://huggingface.co/spaces/jbilcke-hf/ai-comic-factory"
-        },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
-    },
-
-    {
-        "id": 12,
-        "name": "Facepoke",
-        "size": "3.8GB",
-        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/facepoke.gif",
-        "version": "1.0",
-        "developer": "Julian BILCKE",
-        "update": "2025-11-01",
-        "description": "A real-time head transformation app.",
-        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
-        "links": {
-          "github": "https://github.com/jbilcke-hf/FacePoke",
-          "huggingface": "https://huggingface.co/spaces/jbilcke-hf/FacePoke",
-          "paper":"https://arxiv.org/abs/2407.03168"
-        },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
-    },
-
-    {
-        "id": 11,
-        "name": "Diamond",
-        "size": "8GB",
-        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/diamond.gif",
-        "version": "1.0",
-        "developer": "Eloi Alonso",
-        "update": "2025-11-01",
-        "description": "Diffusion for World Modeling Visual Details Matter in Atari.",
-        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
-        "links": {
-          "github": "https://github.com/eloialonso/diamond",
-          "website": "https://diamond-wm.github.io/",
-          "huggingface": "https://huggingface.co/spaces/KwaiVGI/LivePortrait",
-          "paper":"https://arxiv.org/pdf/2405.12399"
-        },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
-    },
-
-    {
-        "id": 10,
-        "name": "Liveportrait",
-        "size": "8GB",
-        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/liveportrait.png",
-        "version": "1.0",
-        "developer": "KwaiVGI",
-        "update": "2025-11-01",
-        "description": "Efficient Portrait Animation with Stitching and Retargeting Control.",
-        "system_requirements": "At least an Intel i5 processor, 8GB of RAM, a capable GPU like an NVIDIA RTX 3060 Ti with at least 8GB VRAM, a Windows 10 or higher operating system.",
-        "links": {
-          "github": "https://github.com/KwaiVGI/LivePortrait",
-          "website": "https://liveportrait.github.io/",
-          "huggingface": "https://huggingface.co/spaces/KwaiVGI/LivePortrait",
-          "paper":"https://arxiv.org/pdf/2407.03168"
-        },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
-    },
-
-    {
-        "id": 9,
-        "name": "F5 TTS",
-        "size": "5GB",
-        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/e2-f5-tts.png",
-        "version": "1.0",
-        "developer": "Yushen CHEN",
-        "update": "2025-11-01",
-        "description": "F5-TTS: A Fairytaler that Fakes Fluent and Faithful Speech with Flow Matching.",
-        "system_requirements": "At least a mid-range CPU, 16GB of RAM, and a dedicated NVIDIA GPU like a GeForce GTX 1050 Ti or better.",
-        "links": {
-          "github": "https://github.com/SWivid/F5-TTS",
-          "website": "https://f5tts.org/",
-          "huggingface": "https://huggingface.co/spaces/mrfakename/E2-F5-TTS",
-          "paper":"https://arxiv.org/abs/2410.06885"
-        },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
-    },
-
-    {
-        "id": 8,
-        "name": "Autogpt",
-        "size": "5GB",
-        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/autogpt.png",
-        "version": "1.0",
-        "developer": "Significant-Gravitas",
-        "update": "2025-11-01",
-        "description": "AutoGPT is a powerful platform that allows you to create, deploy, and manage continuous AI agents that automate complex workflows.",
-        "system_requirements": "RAM 8 GB for running 3B models, 16 GB for running 7B models, and 32 GB for running 13B models.",
-        "links": {
-          "github": "https://github.com/Significant-Gravitas/AutoGPT",
-          "website": "https://autogpt.net/",
-          "huggingface": "https://huggingface.co/spaces/aliabid94/AutoGPT"
-        },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
-    },
-
-    {
-        "id": 7,
+        "id": 4,
         "name": "Ollama",
         "size": "1GB",
         "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/ollama.webp",
@@ -191,7 +57,7 @@
     },
 
     {
-        "id": 6,
+        "id": 3,
         "name": "Applio",
         "size": "3GB",
         "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/applio.webp",
@@ -209,68 +75,6 @@
         "windows_link": "https://www.mediafire.com/file/uqtt8c28sukffgi/Applio-3.2.8-WIN-64-Installer.zip/file",
         "mac_link": ""
     },
-
-    {
-        "id": 5,
-        "name": "Comfi UI",
-        "size": "15GB",
-        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/comfi-ui.jpeg",
-        "version": "1.0",
-        "developer": "Comfyanonymous",
-        "update": "2025-11-01",
-        "description": "This ui will let you design and execute advanced stable diffusion pipelines using a graph/nodes/flowchart based interface ",
-        "system_requirements": "GPU: A decent NVIDIA GPU with at least 8 GB of VRAM CPU: A modern processor, such as an Intel Xeon E5 or i5, or a Ryzen 5 or higher RAM: 16 GB or more Operating system: Windows 10/11 or Linux Storage space: Enough space on your PC for models and generated images.",
-        "links": {
-          "github": "https://github.com/comfyanonymous/ComfyUI",
-          "website": "https://www.comfy.org/",
-          "huggingface": "https://huggingface.co/spideyrim/ComfyUI",
-          "google_colab":"https://colab.research.google.com/github/ltdrdata/ComfyUI-Manager/blob/main/notebooks/comfyui_colab_with_manager.ipynb"
-        },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
-    },
-
-    {
-        "id": 4,
-        "name": "Hunyuan3D 2",
-        "size": "10GB",
-        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/tencent.png",
-        "version": "2.0",
-        "developer": "Tencent",
-        "update": "2025-11-01",
-        "description": "Hunyuan3D 2.0, an advanced large-scale 3D synthesis system for generating high-resolution textured 3D assets. This system includes two foundation components: a large-scale shape generation model - Hunyuan3D-DiT, and a large-scale texture synthesis model - Hunyuan3D-Paint. ",
-        "system_requirements": "at least 12GB of VRAM on an NVIDIA RTX 3000 or 4000 series GPU; 16GB of RAM is recommended, along with ample storage space (around 50GB free) for model files and dependencies; for optimal performance, consider a GPU with even more VRAM (24GB+)",
-        "links": {
-          "github": "https://github.com/Tencent/Hunyuan3D-2",
-          "website": "https://3d-models.hunyuan.tencent.com/",
-          "huggingface": "https://huggingface.co/tencent/Hunyuan3D-2",
-          "paper": "https://github.com/Tencent/Hunyuan3D-2/blob/main/assets/report/Tencent_Hunyuan3D_2_0.pdf"
-        },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
-    },
-
-    {
-        "id": 3,
-        "name": "FLUX.1 [dev]",
-        "size": "10GB",
-        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/flux.png",
-        "version": "1.0",
-        "developer": "black forest labs ",
-        "update": "2025-11-01",
-        "description": "The FLUX. 1 Dev model is a powerful tool for generating high-quality images from text descriptions. With 12 billion parameters, it boasts cutting-edge output quality, competitive prompt following, and efficient performance thanks to its training using guidance distillation.",
-        "system_requirements": "at least 12GB of VRAM on an NVIDIA RTX 3000 or 4000 series GPU; 16GB of RAM is recommended, along with ample storage space (around 50GB free) for model files and dependencies; for optimal performance, consider a GPU with even more VRAM (24GB+)",
-        "links": {
-          "github": "https://github.com/black-forest-labs/flux",
-          "website": "https://blackforestlabs.ai/",
-          "huggingface": "https://huggingface.co/black-forest-labs/FLUX.1-dev",
-          "google_colab": "https://colab.research.google.com/github/camenduru/flux-jupyter/blob/main/flux.1-dev_jupyter.ipynb",
-          "paper": "https://www.arxiv.org/abs/2412.18653"
-        },
-        "windows_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe",
-        "mac_link": "https://github.com/sudo-subho/kal-droid/releases/download/kal-droid-2.1/Kal-Droid_2.0_X64_WINDOWS_Setup.exe"
-    },
-
     {
         "id": 2,
         "name": "Kokoro TTS",
