@@ -1,5 +1,24 @@
 [
      {
+        "id": 8,
+        "name": "Fooocus",
+        "size": "150MB",
+        "logo": "https://raw.githubusercontent.com/sudo-subho/gini-store/main/data/img/Fooocus.webp",
+        "version": "0.4.28",
+        "developer": "lllyasviel",
+        "update": "2025-7-03",
+        "description": "Fooocus is an open source generative artificial intelligence program that allows users to generate images from a text prompt.",
+        "system_requirements": "at least 4 GB of Nvidia GPU memory and 8 GB of system memory. However, for optimal performance, 8 GB of VRAM is recommended.",
+        "links": {
+          "github": "https://github.com/lllyasviel/Fooocus",
+          "website":"https://fooocusai.com/",
+          "google_colab":"https://colab.research.google.com/github/lllyasviel/Fooocus/blob/main/fooocus_colab.ipynb",
+        },
+        "windows_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/Fooocus/Fooocus-2.5.0-WIN-64-Installer.exe",
+        "mac_link": ""
+    },
+     
+     {
         "id": 7,
         "name": "Comfyui",
         "size": "150MB",
