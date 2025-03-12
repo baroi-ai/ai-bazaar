@@ -20,10 +20,10 @@
   {
         "id": 1,
         "title": "Newsletter",
-        "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "button-title": "Learn More",
-        "button-link": "https://kimoitv.com/title/50073/The-Vampire-Diaries.html",
-        "image": "https://images.unsplash.com/photo-1593642634443-44adaa06623a?fit=crop&w=1920&h=1080"
+        "description": "Join My News letter for AI News",
+        "button-title": "Comming Soon...",
+        "button-link": "",
+        "image": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/img/baroi-newsletter.jpg"
     }
 
 ]
