@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Bazaar</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -28,15 +29,16 @@
 
     <!-- Navbar -->
     <nav class="bg-gray-900">
-        <div class="max-w-7xl mx-auto px-4 h-16 grid grid-cols-3 items-center">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <!-- Left: Brand Name -->
             <a href="/ai-bazaar">
                 <div class="flex items-center">
-                    <img style="height: 60px; width: 70px;" src="/ai-bazaar/logos.png" alt="AI Bazaar Logo">
+                    <img style="height: 60px; width: 70px;" src="/logos.png" alt="AI Bazaar Logo">
                     <span class="text-cyan-500 font-bold text-xl">AI Bazaar</span>
                 </div>
             </a>
 
+            <!-- Center: Search (visible on md+) -->
             <div class="hidden md:flex justify-center">
                 <div class="flex">
                     <input id="searchInput" type="text" placeholder="Search..."
@@ -50,15 +52,17 @@
                     </button>
                 </div>
             </div>
-            <!-- Right: Desktop Menu -->
+
+            <!-- Right: Desktop Menu (visible on md+) -->
             <div class="hidden md:flex justify-end space-x-4">
                 <a href="/ai-bazaar" class="text-white hover:text-cyan-500">Home</a>
-                <a href="/ai-bazaar/support.html" class="text-white hover:text-cyan-500">Social</a>
-                <a href="/ai-bazaar/about.html" class="text-white hover:text-cyan-500">About</a>
-                <a href="/ai-bazaar/support.html" class="text-white hover:text-cyan-500">Support</a>
+                <a href="/support.html" class="text-white hover:text-cyan-500">Donate</a>
+                <a href="/about.html" class="text-white hover:text-cyan-500">About</a>
+                <a href="/support.html" class="text-white hover:text-cyan-500">Support</a>
             </div>
-            <!-- Mobile Menu Button -->
-            <div class="md:hidden col-span-3 flex justify-end">
+
+            <!-- Mobile Menu Button (visible on mobile) -->
+            <div class="md:hidden">
                 <button id="mobile-menu-button" class="text-white hover:text-cyan-500 focus:outline-none">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
@@ -68,18 +72,29 @@
                 </button>
             </div>
         </div>
-        <!-- Mobile Menu -->
+        <!-- Mobile Menu (toggle via JS) -->
         <div id="mobile-menu" class="md:hidden hidden bg-gray-700 px-2 pt-2 pb-3 space-y-1">
             <a href="/ai-bazaar" class="text-white hover:text-cyan-500">Home</a>
-            <a href="/ai-bazaar/support.html" class="text-white hover:text-cyan-500">Social</a>
-            <a href="/ai-bazaar/about.html" class="text-white hover:text-cyan-500">About</a>
-            <a href="/ai-bazaar/support.html" class="text-white hover:text-cyan-500">Support</a>
+            <a href="/support.html" class="text-white hover:text-cyan-500">Donate</a>
+            <a href="/about.html" class="text-white hover:text-cyan-500">About</a>
+            <a href="/support.html" class="text-white hover:text-cyan-500">Support</a>
         </div>
     </nav>
+
 
     <section id="carousel-section" class="relative h-[50vh] overflow-hidden bg-gray-900">
         <!-- Slides and indicators will be injected here -->
     </section>
+
+
+
+    <script>
+        document.getElementById('mobile-menu-button').addEventListener('click', function () {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+    </script>
+
 
     <script>
         // Fetch the carousel JSON data from GitHub's raw URL
@@ -98,13 +113,13 @@
                     slideDiv.style.transition = 'opacity 1s';
                     slideDiv.style.opacity = index === 0 ? '1' : '0';
                     slideDiv.innerHTML = `
-                <img src="${slide.image}" alt="Slide ${index + 1}" class="w-full h-full object-cover">
+            <img src="${slide.image}" alt="Slide ${index + 1}" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                     <div class="text-center">
                         <h1 class="text-4xl md:text-6xl font-bold text-cyan-500 mb-4">${slide.title}</h1>
                         <p class="text-lg md:text-xl mb-8">${slide.description}</p>
                         <a href="${slide['button-link']}" target="_blank" class="bg-cyan-500 hover:bg-cyan-600 text-gray-900 font-semibold py-3 px-6 shadow-lg shadow-cyan-500/50 rounded-full">
-                          ${slide['button-title']}
+                            ${slide['button-title']}
                         </a>
                     </div>
                 </div>
@@ -183,34 +198,14 @@
             <!-- Heading: This will be updated after search -->
             <h2 id="app-heading" class="text-2xl md:text-3xl font-bold text-cyan-500 mb-4 text-center">AI Apps</h2>
             <!-- 7-column grid for app cards -->
-            <div id="app-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
+            <div id="app-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
                 <!-- App cards will be injected here -->
             </div>
         </div>
     </section>
 
-    <!-- Pagination Component -->
-    <div class="flex justify-center mt-6 mb-6">
-        <nav class="inline-flex -space-x-px shadow-lg shadow-cyan-500/50" aria-label="Pagination">
-            <a href="#"
-                class="px-3 py-2 ml-0 leading-tight text-white bg-cyan-500 border border-gray-700 rounded-l-lg hover:bg-cyan-600">
-                Previous
-            </a>
-            <a href="#"
-                class="px-3 py-2 leading-tight text-white bg-gray-800 border border-gray-700 hover:bg-cyan-500 hover:text-white">1</a>
-            <a href="#"
-                class="px-3 py-2 leading-tight text-white bg-gray-800 border border-gray-700 hover:bg-cyan-500 hover:text-white">2</a>
-            <a href="#"
-                class="px-3 py-2 leading-tight text-white bg-gray-800 border border-gray-700 hover:bg-cyan-500 hover:text-white">3</a>
-            <span class="px-3 py-2 leading-tight text-white bg-gray-800 border border-gray-700">...</span>
-            <a href="#"
-                class="px-3 py-2 leading-tight text-white bg-gray-800 border border-gray-700 hover:bg-cyan-500 hover:text-white">10</a>
-            <a href="#"
-                class="px-3 py-2 leading-tight text-white bg-cyan-500 border border-gray-700 rounded-r-lg hover:bg-cyan-600">
-                Next
-            </a>
-        </nav>
-    </div>
+    <!-- Pagination Component Container -->
+    <div id="pagination" class="flex justify-center mt-6 mb-6"></div>
 
     <!-- Footer -->
     <footer class="bg-gray-900">
@@ -232,40 +227,110 @@
 
 
     <script>
-        // Use the raw URL to your JSON file on GitHub
-        const dataUrls = "https://raw.githubusercontent.com/baroi-ai/AI-bazaar/main/data/data.json";
+        const dataUrll = "https://raw.githubusercontent.com/baroi-ai/AI-bazaar/main/data/data.json";
+        const itemsPerPage = 40; // 5 cards per page
+        let currentPage = 1;
+        let allApps = [];
 
-        fetch(dataUrls)
+        const appGrids = document.getElementById("app-grid");
+        const paginationContainer = document.getElementById("pagination");
+
+        // Function to render cards for a given page
+        function renderPage(page) {
+            appGrids.innerHTML = "";
+            const startIndex = (page - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, allApps.length);
+
+            for (let i = startIndex; i < endIndex; i++) {
+                const app = allApps[i];
+                const card = `
+                <a href="/ai-bazaar/app.html?id=${app.id}" class="block">
+                    <div class="w-40 flex-shrink-0 rounded-lg p-4 text-center transform transition duration-300 hover:scale-105">
+                        <img src="${app.logo}" loading="lazy" alt="${app.name}"
+                            class="w-128 h-128 mx-auto mb-2 rounded-lg shadow-lg shadow-cyan-500/50" />
+                        <h3 class="w-[14ch] truncate text-sm font-semibold text-white">${app.name}</h3>
+                        <p class="flex items-center gap-1 text-cyan-500 text-xs justify-center">
+                            ${app.size}
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
+                                <path fill-rule="evenodd"
+                                    d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-.53 14.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V8.25a.75.75 0 0 0-1.5 0v5.69l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </p>
+                    </div>
+                </a>
+        `;
+                appGrids.innerHTML += card;
+            }
+        }
+
+        // Function to render the pagination component
+        function renderPagination() {
+            paginationContainer.innerHTML = "";
+            const totalPages = Math.ceil(allApps.length / itemsPerPage);
+
+            // Previous button
+            const prevLink = document.createElement("a");
+            prevLink.href = "#";
+            prevLink.className = "px-3 py-2 ml-0 leading-tight text-white bg-cyan-500 border border-gray-700 rounded-l-lg hover:bg-cyan-600";
+            prevLink.textContent = "Previous";
+            prevLink.addEventListener("click", function (e) {
+                e.preventDefault();
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderPage(currentPage);
+                    renderPagination();
+                }
+            });
+            paginationContainer.appendChild(prevLink);
+
+            // Page number links
+            for (let i = 1; i <= totalPages; i++) {
+                const pageLink = document.createElement("a");
+                pageLink.href = "#";
+                pageLink.className = "px-3 py-2 leading-tight text-white bg-gray-800 border border-gray-700 hover:bg-cyan-500 hover:text-white";
+                pageLink.textContent = i;
+                if (i === currentPage) {
+                    pageLink.classList.add("!bg-cyan-500");
+                }
+                pageLink.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    currentPage = i;
+                    renderPage(currentPage);
+                    renderPagination();
+                });
+                paginationContainer.appendChild(pageLink);
+            }
+
+            // Next button
+            const nextLink = document.createElement("a");
+            nextLink.href = "#";
+            nextLink.className = "px-3 py-2 leading-tight text-white bg-cyan-500 border border-gray-700 rounded-r-lg hover:bg-cyan-600";
+            nextLink.textContent = "Next";
+            nextLink.addEventListener("click", function (e) {
+                e.preventDefault();
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderPage(currentPage);
+                    renderPagination();
+                }
+            });
+            paginationContainer.appendChild(nextLink);
+        }
+
+        // Fetch data and initialize pagination
+        fetch(dataUrll)
             .then(response => response.json())
             .then(data => {
-                const appGrid = document.getElementById("app-grid");
-                data.forEach(app => {
-                    // Generate an app card using a template literal.
-                    // The app name is forced to a width of 14ch and truncated.
-                    const card = `
-             <a href="/ai-bazaar/app.html?id=${app.id}" class="block">
-            <div class="w-40 flex-shrink-0 rounded-lg p-4 text-center transform transition duration-300 hover:scale-105">
-              <img src="${app.logo}" alt="${app.name}"
-                class="w-128 h-128 mx-auto mb-2 rounded-lg shadow-lg shadow-cyan-500/50" />
-              <h3 class="w-[14ch] truncate text-sm font-semibold text-white">${app.name}</h3>
-              <p class="flex items-center gap-1 text-cyan-500 text-xs justify-center">
-                ${app.size}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
-                  <path fill-rule="evenodd"
-                    d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-.53 14.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V8.25a.75.75 0 0 0-1.5 0v5.69l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3Z"
-                    clip-rule="evenodd" />
-                </svg>
-              </p>
-            </div>
-          </a>
-          `;
-                    appGrid.innerHTML += card;
-                });
+                allApps = data;
+                renderPage(currentPage);
+                renderPagination();
             })
             .catch(error => {
                 console.error("Error loading app data:", error);
             });
     </script>
+
 
     <!-- JavaScript for Search Functionality -->
     <script>
@@ -287,22 +352,22 @@
             }
             apps.forEach(app => {
                 const card = `
-           <a href="/ai-bazaar/app.html?id=${app.id}" class="block">
-            <div class="w-40 flex-shrink-0 rounded-lg p-4 text-center transform transition duration-300 hover:scale-105">
-              <img src="${app.logo}" alt="${app.name}"
-                class="w-128 h-128 mx-auto mb-2 rounded-lg shadow-lg shadow-cyan-500/50" />
-              <h3 class="w-[14ch] truncate text-sm font-semibold text-white">${app.name}</h3>
-              <p class="flex items-center gap-1 text-cyan-500 text-xs justify-center">
-                ${app.size}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
-                  <path fill-rule="evenodd"
-                    d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-.53 14.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V8.25a.75.75 0 0 0-1.5 0v5.69l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3Z"
-                    clip-rule="evenodd" />
-                </svg>
-              </p>
-            </div>
-          </a>
-        `;
+                <a href="/ai-bazaar/app.html?id=${app.id}" class="block">
+                    <div class="w-40 flex-shrink-0 rounded-lg p-4 text-center transform transition duration-300 hover:scale-105">
+                        <img src="${app.logo}" loading="lazy" alt="${app.name}"
+                            class="w-128 h-128 mx-auto mb-2 rounded-lg shadow-lg shadow-cyan-500/50" />
+                        <h3 class="w-[14ch] truncate text-sm font-semibold text-white">${app.name}</h3>
+                        <p class="flex items-center gap-1 text-cyan-500 text-xs justify-center">
+                            ${app.size}
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
+                                <path fill-rule="evenodd"
+                                    d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-.53 14.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V8.25a.75.75 0 0 0-1.5 0v5.69l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </p>
+                    </div>
+                </a>
+                `;
                 appGrid.innerHTML += card;
             });
         }
