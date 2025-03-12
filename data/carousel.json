@@ -10,11 +10,11 @@
   
     {
         "id": 2,
-        "title": "Le chat",
-        "description": "Towards Striking, Simplified, and Semi-Body Human Animation",
-        "button-title": "Join",
-        "button-link": "https://kimoitv.com/title/50073/The-Vampire-Diaries.html",
-        "image": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?fit=crop&w=1920&h=1080"
+        "title": "Ai Bazaar",
+        "description": "Explore AI Models that can easily install in your PC",
+        "button-title": "Install Now",
+        "button-link": "",
+        "image": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/img/ai-bazaar2.jpg"
     },
 
   {
