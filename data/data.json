@@ -32,6 +32,11 @@
           "github": "https://github.com/comfyanonymous/ComfyUI",
           "website":"www.comfy.org"
         },
+         "screenshots": {
+          "link1": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/comfi.webp",
+          "link2":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/comfi2.webp",
+          "link3":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/comfi3.webp"
+        },
         "windows_link": "https://www.comfy.org/download",
         "mac_link": "https://www.comfy.org/download"
     },
@@ -73,8 +78,7 @@
         "screenshots": {
           "link1": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/screen1.webp",
           "link2":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/screen2.webp",
-          "link3":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/screen3.webp",
-          "link4":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/screen4.webp"
+          "link3":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/screen3.webp"
         },
         "windows_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/facefussion/FaceFusion-v3.1.1-WIN-64-Installer.exe",
         "mac_link": ""
@@ -136,8 +140,7 @@
         "screenshots": {
           "link1": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/kokro.webp",
           "link2":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/kokro1.webp",
-          "link3":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/kokro2.webp",
-          "link4":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/kokro3.webp"
+          "link3":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/kokro2.webp"
         },
         "windows_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/kokoro-tts/Kokoro-TTS-WIN-64-Installer.exe",
         "mac_link": ""
