@@ -129,6 +129,11 @@
           "huggingface": "https://huggingface.co/spaces/IAHispano/Applio",
           "google_colab":"https://colab.research.google.com/github/iahispano/applio/blob/master/assets/Applio.ipynb"
         },
+        "screenshots": {
+          "link1": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/applio3.webp",
+          "link2":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/applio2.webp",
+          "link3":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/applio.webp"
+        },
         "windows_link": "https://www.mediafire.com/file/uqtt8c28sukffgi/Applio-3.2.8-WIN-64-Installer.zip/file",
         "mac_link": ""
     },
