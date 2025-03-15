@@ -99,6 +99,11 @@
           "website": "https://ollama.com/",
           "huggingface": "https://huggingface.co/docs/hub/en/ollama"
         },
+        "screenshots": {
+          "link1": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/ollama.webp",
+          "link2":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/ollama2.webp",
+          "link3":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/ollama3.webp"
+        },
         "windows_link": "https://ollama.com/download/OllamaSetup.exe",
         "mac_link": "https://ollama.com/download/Ollama-darwin.zip"
     },
