@@ -5,7 +5,7 @@
         "description": "Install Ai models in just one click Locally",
         "button-title": "Explore App",
         "button-link": "https://baroi-ai.github.io/ai-bazaar/",
-        "image": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/img/ai-bazaar.jpg"
+        "image": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/img/ai-bazaar.webp"
     },
   
     {
@@ -14,7 +14,7 @@
         "description": "Explore AI Models that can easily install in your PC",
         "button-title": "Install Now",
         "button-link": "",
-        "image": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/img/ai-bazaar2.jpg"
+        "image": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/img/ai-bazaar2.webp"
     },
 
   {
@@ -23,7 +23,7 @@
         "description": "Join My News letter for AI News",
         "button-title": "Comming Soon...",
         "button-link": "",
-        "image": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/img/newsletter.jpg"
+        "image": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/img/newsletter.webp"
     }
 
 ]
