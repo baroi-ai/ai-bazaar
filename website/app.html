@@ -4,8 +4,10 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>App Details - AI Bazaar</title>
-    <link rel="icon" type="image/x-icon" href="/ai-bazaar/favicon.ico">
+    <title>App name - AI Bazaar</title>
+    <meta name="description" content="AI Bazaar">
+    <meta name="keywords" content="AI, ai app, install ai, ai model">
+    <link rel="icon" type="image/x-icon" href="ai-bazaar/favicon.ico">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -43,13 +45,7 @@
                 <a href="/ai-bazaar/support.html" class="text-white hover:text-cyan-500">Support</a>
             </div>
         </div>
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="md:hidden hidden bg-gray-700 px-2 pt-2 pb-3 space-y-1">
-            <a href="/ai-bazaar/ai-bazaar" class="text-white hover:text-cyan-500">Home</a>
-            <a href="/ai-bazaar/support.html" class="text-white hover:text-cyan-500">Donate</a>
-            <a href="/ai-bazaar/about.html" class="text-white hover:text-cyan-500">About</a>
-            <a href="/ai-bazaar/support.html" class="text-white hover:text-cyan-500">Support</a>
-        </div>
+
     </nav>
 
     <!-- Carousel Section -->
@@ -341,6 +337,22 @@
                 </a>
             </div>
 
+            <!-- Developer Info Section -->
+            <div id="appInfo" class="mb-6 flex flex-wrap justify-center gap-4 text-center">
+                <div class="developer">
+                    <span class="font-semibold text-cyan-500">Developer:</span> John Doe
+                </div>
+                <div class="version">
+                    <span class="font-semibold text-cyan-500">Version:</span> 1.0.0
+                </div>
+                <div class="size">
+                    <span class="font-semibold text-cyan-500">Size:</span> 150 MB
+                </div>
+                <div class="update">
+                    <span class="font-semibold text-cyan-500">Updated:</span> Jan 1, 2023
+                </div>
+            </div>
+
             <!-- Download Buttons -->
             <div class="flex justify-center space-x-4 mb-6">
                 <a href="#" id="winDownload"
@@ -404,6 +416,39 @@
                 </a>
             </div>
 
+            <style>
+                /* Target the inner scrollable container within the screenshot section */
+                #screenshotSection .overflow-x-auto::-webkit-scrollbar {
+                    height: 12px;
+                    /* Horizontal scrollbar height */
+                }
+
+                #screenshotSection .overflow-x-auto::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+
+                #screenshotSection .overflow-x-auto::-webkit-scrollbar-thumb {
+                    background: linear-gradient(90deg, red, #06b6d4);
+                    border-radius: 6px;
+                }
+
+                /* Firefox styling (limited to solid colors) */
+                #screenshotSection .overflow-x-auto {
+                    scrollbar-width: thin;
+                    scrollbar-color: #06b6d4 transparent;
+                }
+            </style>
+
+            <!-- Screenshots Section -->
+            <div id="screenshotSection" class="mb-6">
+                <div class="overflow-x-auto mx-auto w-full sm:w-[50rem]">
+                    <div class="flex space-x-4">
+                        <!-- Images will be injected here -->
+                    </div>
+                </div>
+            </div>
+
+
             <!-- App Details -->
             <div id="descriptionSection" class="bg-gray-800 p-4 rounded-lg mb-6">
                 <h2 class="text-xl font-semibold text-cyan-500 mb-2">Description</h2>
@@ -415,6 +460,12 @@
                 <h2 class="text-xl font-semibold text-cyan-500 mb-2">System Requirements</h2>
                 <p id="requirementsText" class="text-sm"></p>
             </div>
+
+            <div id="installSection" class="bg-gray-800 p-4 rounded-lg mb-6">
+                <h2 class="text-xl font-semibold text-cyan-500 mb-2">Install Instructions</h2>
+                <p id="installText" class="text-sm"></p>
+            </div>
+
         </div>
     </section>
 
@@ -457,9 +508,58 @@
                     document.getElementById('appLogo').src = app.logo;
                     // Set the app name
                     document.getElementById('appName').textContent = app.name;
+
+                    document.title = `${app.name} - AI Bazaar`;
+
+
                     // Populate the rest of the details
                     document.getElementById('appDescription').textContent = app.description;
                     document.getElementById('requirementsText').textContent = app.system_requirements;
+
+                    const installSection = document.getElementById('installSection');
+                    if (app.install_instructions && app.install_instructions.trim() !== "") {
+                        document.getElementById('installText').textContent = app.install_instructions;
+                    } else {
+                        installSection.style.display = 'none';
+                    }
+
+                    function updateLink(linkId, url) {
+                        const el = document.getElementById(linkId);
+                        if (url && url.trim() !== "") {
+                            el.href = url;
+                        } else {
+                            el.style.display = "none"; // or el.remove();
+                        }
+                    }
+
+                    // In your fetch block:
+                    if (app.links) {
+                        updateLink('githubLink', app.links.github);
+                        updateLink('huggingfaceLink', app.links.huggingface);
+                        updateLink('websiteLink', app.links.website);
+                        updateLink('colabLink', app.links.google_colab);
+                        updateLink('paperLink', app.links.paper);
+                    }
+
+                    // Populate Screenshots Section
+                    const screenshotSection = document.getElementById('screenshotSection');
+                    if (app.screenshots && Object.keys(app.screenshots).length > 0) {
+                        const screenshotContainer = screenshotSection.querySelector('.flex.space-x-4');
+                        // Clear any existing images
+                        screenshotContainer.innerHTML = '';
+                        // Iterate over each screenshot link and create an image element
+                        Object.keys(app.screenshots).forEach((key, index) => {
+                            const img = document.createElement('img');
+                            img.src = app.screenshots[key];
+                            img.alt = `Screenshot ${index + 1}`;
+                            // Set fixed width and height; object-cover ensures the image fills the container without distortion
+                            img.className = 'w-64 h-48 object-cover rounded-lg shadow-lg';
+                            screenshotContainer.appendChild(img);
+                        });
+                    } else {
+                        // Hide the screenshots section if no screenshots are available
+                        screenshotSection.style.display = 'none';
+                    }
 
                     // Set download button links if provided
 
@@ -500,26 +600,14 @@
                     updateDownloadButton("winDownload", app.windows_link, "Coming Soon");
                     updateDownloadButton("macDownload", app.mac_link, "Coming Soon", macSVG);
 
+                    // Populate Developer Info from JSON data
+                    document.getElementById('developerName').textContent = app.developer;
+                    document.getElementById('version').textContent = app.version;
+                    document.getElementById('size').textContent = app.size;
+                    document.getElementById('updateDate').textContent = app.update;
 
+                    metaDescription.setAttribute("content", app.description);
 
-
-                    function updateLink(linkId, url) {
-                        const el = document.getElementById(linkId);
-                        if (url && url.trim() !== "") {
-                            el.href = url;
-                        } else {
-                            el.style.display = "none"; // or el.remove();
-                        }
-                    }
-
-                    // In your fetch block:
-                    if (app.links) {
-                        updateLink('githubLink', app.links.github);
-                        updateLink('huggingfaceLink', app.links.huggingface);
-                        updateLink('websiteLink', app.links.website);
-                        updateLink('colabLink', app.links.google_colab);
-                        updateLink('paperLink', app.links.paper);
-                    }
 
                 } else {
                     document.body.innerHTML = '<p class="text-center py-10">App not found.</p>';
