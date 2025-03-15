@@ -14,12 +14,6 @@
           "website":"https://fooocusai.com/",
           "google_colab":"https://colab.research.google.com/github/lllyasviel/Fooocus/blob/main/fooocus_colab.ipynb"
         },
-        "screenshots": {
-          "link1": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/screen1.webp",
-          "link2":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/screen2.webp",
-          "link3":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/screen3.webp",
-          "link4":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/screen4.webp"
-        },
         "windows_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/Fooocus/Fooocus-2.5.0-WIN-64-Installer.exe",
         "mac_link": ""
     },
@@ -75,6 +69,12 @@
           "github": "https://github.com/facefusion/facefusion",
           "huggingface":"https://huggingface.co/spaces/leonelhs/FaceFusion",
           "website":"https://docs.facefusion.io/"
+        },
+        "screenshots": {
+          "link1": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/screen1.webp",
+          "link2":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/screen2.webp",
+          "link3":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/screen3.webp",
+          "link4":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/screen4.webp"
         },
         "windows_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/facefussion/FaceFusion-v3.1.1-WIN-64-Installer.exe",
         "mac_link": ""
@@ -132,6 +132,12 @@
           "github": "https://github.com/PierrunoYT/Kokoro-TTS-Local",
           "website": "https://kokorotts.net/",
           "huggingface": "https://huggingface.co/spaces/hexgrad/Kokoro-TTS"
+        },
+        "screenshots": {
+          "link1": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/kokro.webp",
+          "link2":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/kokro1.webp",
+          "link3":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/kokro2.webp",
+          "link4":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/kokro3.webp"
         },
         "windows_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/kokoro-tts/Kokoro-TTS-WIN-64-Installer.exe",
         "mac_link": ""
