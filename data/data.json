@@ -14,6 +14,11 @@
           "website":"https://fooocusai.com/",
           "google_colab":"https://colab.research.google.com/github/lllyasviel/Fooocus/blob/main/fooocus_colab.ipynb"
         },
+        "screenshots": {
+          "link1": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/foocus3.webp",
+          "link2":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/foocus2.webp",
+          "link3":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/foocus.webp"
+        },
         "windows_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/Fooocus/Fooocus-2.5.0-WIN-64-Installer.exe",
         "mac_link": ""
     },
@@ -175,6 +180,11 @@
         "github": "https://github.com/browser-use/browser-use",
         "website": "https://browser-use.com/"
       },
+      "screenshots": {
+          "link1": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/applio3.webp",
+          "link2":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/applio2.webp",
+          "link3":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/applio.webp"
+        },
        "windows_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/borwser-use/Browser-Use-V0.1.37-WIN-64-Installer.exe",
        "mac_link": ""
     }
