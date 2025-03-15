@@ -9,6 +9,7 @@
         "update": "2025-7-03",
         "description": "Fooocus is an open source generative artificial intelligence program that allows users to generate images from a text prompt.",
         "system_requirements": "at least 4 GB of Nvidia GPU memory and 8 GB of system memory. However, for optimal performance, 8 GB of VRAM is recommended.",
+        "install_instructions": "WINDOWS: Click into the install.bat after installing. Double click on run.bat to start the app.",    
         "links": {
           "github": "https://github.com/lllyasviel/Fooocus",
           "website":"https://fooocusai.com/",
@@ -56,6 +57,7 @@
         "update": "2025-7-03",
         "description": "Invoke is a leading creative engine built to empower professionals and enthusiasts alike. Generate and create stunning visual media using the latest AI-driven technologies. Invoke offers an industry leading web-based UI, and serves as the foundation for multiple commercial products.",
         "system_requirements": "least 8GB of RAM, a dedicated GPU with at least 3.5GB VRAM (16GB recommended).",
+        "install_instructions": "WINDOWS: Click into the install.bat after installing. Double click on run.bat to start the app.",   
         "links": {
           "github": "https://github.com/invoke-ai/InvokeAI",
           "huggingface":"https://huggingface.co/spaces/leonelhs/FaceFusion",
