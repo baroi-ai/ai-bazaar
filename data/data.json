@@ -56,6 +56,11 @@
           "huggingface":"https://huggingface.co/spaces/leonelhs/FaceFusion",
           "website":"https://invoke-ai.github.io/InvokeAI/"
         },
+        "screenshots": {
+          "link1": "https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/invoke.webp",
+          "link2":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/invoke2.webp",
+          "link3":"https://raw.githubusercontent.com/sudo-subho/ai-bazaar/main/data/screenshorts/invoke3.webp"
+        },
         "windows_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/facefussion/FaceFusion-v3.1.1-WIN-64-Installer.exe",
         "mac_link": "https://github.com/baroi-ai/ai-bazaar/releases/download/invoke-ai/Invoke.Community.Edition.dmg"
     },
