@@ -1,0 +1,33 @@
+# Your existing rules
+aibazaar-daemon/installed_apps/
+aibazaar-daemon/downloaded_scripts/
+aibazaar-daemon/uv
+pocketbase/pb_data/
+
+# --- ADD THESE MISSING RULES ---
+
+# Node.js dependencies (This is usually 500MB+ alone)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js build output (This is massive)
+.next/
+out/
+build/
+
+# Environment variables (SECURITY RISK if pushed)
+.env
+.env*.local
+
+# Python Environments & Cache
+__pycache__/
+*.py[cod]
+venv/
+env/
+.venv/
+
+# OS generated files
+.DS_Store
+Thumbs.db
