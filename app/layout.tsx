@@ -4,6 +4,7 @@ import "./globals.css";
 import MobileNav from "./components/MobileNav"; // Import Mobile Nav
 import CookieBanner from "./components/CookieBanner";
 import { cn } from "@/lib/utils";
+import { Toaster } from "sonner"; // 1. Import Toaster
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -95,6 +96,9 @@ export default function RootLayout({
         {/* Global UI Overlays */}
         <CookieBanner />
         <MobileNav />
+        
+        {/* 2. Add Toaster globally */}
+        <Toaster position="top-right" theme="dark" richColors closeButton />
       </body>
     </html>
   );

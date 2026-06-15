@@ -2,15 +2,22 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import PocketBase from "pocketbase";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
+// Initialize PocketBase (Update URL for production)
+const pb = new PocketBase("http://127.0.0.1:8090");
+
 export default function ProfilePage() {
-  // --- MOCK USER DATA FOR UI ---
+  const router = useRouter();
+
+  // --- USER DATA STATE ---
   const [currentUser, setCurrentUser] = useState<{
-    name: string | null;
+    name: string;
     email: string;
-    image: string | null;
+    avatar: string | null;
     credits: number;
     initials: string;
     subscription?: {
@@ -23,7 +30,7 @@ export default function ProfilePage() {
 
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
-  // --- STATES ---
+  // --- UI STATES ---
   const [couponCode, setCouponCode] = useState("");
   const [isRedeeming, setIsRedeeming] = useState(false);
 
@@ -36,26 +43,36 @@ export default function ProfilePage() {
   
   const CONFIRMATION_PHRASE = "delete my account";
 
-  // --- 1. Load Profile (Mocked) ---
+  // --- 1. Load Real Profile & Protect Route ---
   useEffect(() => {
-    // Faking a network request to load user profile
-    setTimeout(() => {
+    if (!pb.authStore.isValid || !pb.authStore.model) {
+      router.push("/login");
+    } else {
+      const model = pb.authStore.model;
+      
+      // Generate initials for fallback
+      const initials = model.name 
+        ? model.name.substring(0, 2).toUpperCase() 
+        : model.email.substring(0, 2).toUpperCase();
+
+      // Resolve the actual avatar URL from PocketBase
+      const avatarUrl = model.avatar 
+        ? pb.files.getURL(model, model.avatar) 
+        : null;
+
       setCurrentUser({
-        name: "Subhodeep Baroi",
-        email: "subhodeepbaroi2@gmail.com",
-        image: null,
-        credits: 60,
-        initials: "SB",
-        subscription: {
-          planId: "Pro",
-          subscriptionId: "sub_12345",
-          status: "active",
-          currentPeriodEnd: "2026-07-02T00:00:00Z"
-        }
+        name: model.name || "",
+        email: model.email,
+        avatar: avatarUrl,
+        credits: model.credits || 0,
+        initials: initials,
+        // Using mock data for subscription until you add a Subscriptions collection
+        subscription: null 
       });
+      
       setIsLoadingProfile(false);
-    }, 800);
-  }, []);
+    }
+  }, [router]);
 
   // --- 2. Coupon Handler ---
   const handleRedeemCoupon = () => {
@@ -99,12 +116,27 @@ export default function ProfilePage() {
     if (deleteConfirmationText.toLowerCase() !== CONFIRMATION_PHRASE) return;
     
     setIsDeletingAccount(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsDeletingAccount(false);
       setIsDeleteDialogOpen(false);
-      alert("Account deleted. Logging out...");
-      // In reality, this would redirect to home or call signOut()
+      
+      try {
+        if (pb.authStore.model?.id) {
+           await pb.collection('users').delete(pb.authStore.model.id);
+        }
+        pb.authStore.clear();
+        alert("Account deleted. Logging out...");
+        router.push("/");
+      } catch (error) {
+        alert("Failed to delete account. Please try again.");
+      }
     }, 1500);
+  };
+
+  // --- 5. Logout Handler ---
+  const handleLogout = () => {
+    pb.authStore.clear();
+    router.push("/login");
   };
 
   // Helper
@@ -125,16 +157,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!currentUser) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] text-zinc-400">
-        <p className="mb-4">User not found. Please log in.</p>
-        <Link href="/" className="px-6 py-2 bg-sky-500 hover:bg-sky-400 text-[#0a0a0a] rounded-xl font-bold transition-colors">
-          Go Home
-        </Link>
-      </div>
-    );
-  }
+  if (!currentUser) return null; // Safe fallback since useEffect handles the redirect
 
   return (
     <main className="min-h-screen bg-[#050508] text-gray-100 font-sans flex flex-col relative">
@@ -149,8 +172,12 @@ export default function ProfilePage() {
           
           {/* HEADER */}
           <div className="flex flex-col items-center justify-center text-center pb-8 pt-10 border-b border-zinc-800/80 relative">
-            <div className="h-24 w-24 mb-5 border-2 border-sky-500/50 shadow-[0_0_20px_rgba(14,165,233,0.3)] rounded-full bg-[#0a0a0a] flex items-center justify-center text-3xl font-bold text-sky-400">
-              {currentUser.initials}
+            <div className="h-24 w-24 mb-5 border-2 border-sky-500/50 shadow-[0_0_20px_rgba(14,165,233,0.3)] rounded-full bg-[#0a0a0a] flex items-center justify-center text-3xl font-bold text-sky-400 overflow-hidden">
+              {currentUser.avatar ? (
+                <img src={currentUser.avatar} alt="Profile Avatar" className="w-full h-full object-cover" />
+              ) : (
+                currentUser.initials
+              )}
             </div>
             <h2 className="text-2xl font-bold text-white break-all px-4">
               {currentUser.name || currentUser.email.split("@")[0]}
@@ -225,7 +252,7 @@ export default function ProfilePage() {
                   <p className="text-sm text-zinc-400">
                     You are currently on the Free Tier.
                   </p>
-                  <Link href="/billing" className="w-full md:w-auto">
+                  <Link href="/pricing" className="w-full md:w-auto">
                     <button className="bg-sky-500 hover:bg-sky-400 transition-colors text-[#0a0a0a] font-bold w-full md:w-auto px-5 h-11 rounded-lg flex items-center justify-center gap-2">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
                       Upgrade to Pro
@@ -276,7 +303,7 @@ export default function ProfilePage() {
               Delete Account
             </button>
             <button
-              onClick={() => alert("Logging out...")}
+              onClick={handleLogout}
               className="w-full md:w-auto border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors bg-transparent h-11 px-5 rounded-lg flex items-center justify-center text-sm font-medium"
             >
               <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>

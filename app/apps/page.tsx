@@ -9,26 +9,9 @@ import PocketBase from 'pocketbase';
 // Initialize PocketBase
 const pb = new PocketBase("http://127.0.0.1:8090");
 
-// --- EXACT DB CATEGORIES MAPPED TO UI ---
-const TASKS = ["All", "Image", "Video", "Text", "Audio", "TTS", "LLM", "BG Remover", "Vision"];
-
-// UI to DB Mapper
-const getDbCategory = (uiTask: string) => {
-  if (uiTask === "BG Remover") return "bg-remover";
-  return uiTask.toLowerCase();
-};
-
-// DB to UI Mapper
-const formatDbCategory = (cat: string) => {
-  if (!cat) return "Text";
-  const lower = cat.toLowerCase();
-  if (lower === "bg-remover") return "BG Remover";
-  if (lower === "tts" || lower === "llm") return cat.toUpperCase();
-  return cat.charAt(0).toUpperCase() + cat.slice(1);
-};
-
 const COMPUTE_TYPES = ["All", "Local", "Cloud"];
 const PRICING_TYPES = ["All", "Free", "Paid"];
+const PLATFORM_TYPES = ["All", "Web", "Windows", "Mac OS", "Linux", "Android", "IOS"];
 const SORT_OPTIONS = ["Recently Released", "Recently Updated", "Price: Low to High", "Price: High to Low"];
 const ITEMS_PER_PAGE = 12;
 
@@ -40,8 +23,32 @@ const timeAgo = (dateStr: string) => {
   return `${days} days ago`;
 };
 
+// Dynamic Icon Mapper based on Category Name keywords
+const getTaskIcon = (taskName: string) => {
+  if (!taskName) return <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z" /></svg>;
+  
+  const lower = taskName.toLowerCase();
+  if (lower.includes("image") || lower.includes("vision") || lower.includes("photo")) {
+    return <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>;
+  }
+  if (lower.includes("video") || lower.includes("media")) {
+    return <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
+  }
+  if (lower.includes("audio") || lower.includes("tts") || lower.includes("voice") || lower.includes("sound")) {
+    return <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>;
+  }
+  if (lower.includes("text") || lower.includes("llm") || lower.includes("chat")) {
+    return <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
+  }
+  if (lower.includes("bg") || lower.includes("background") || lower.includes("remover")) {
+    return <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
+  }
+  
+  return <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25z" /></svg>;
+};
+
 export default function RepositoryPage() {
-  // --- STATE ---
+  const [categories, setCategories] = useState<any[]>([]); 
   const [models, setModels] = useState<any[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -50,25 +57,22 @@ export default function RepositoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   
-  const [activeTask, setActiveTask] = useState("All");
+  const [activeCategoryId, setActiveCategoryId] = useState("all");
   const [activeCompute, setActiveCompute] = useState("All");
   const [activePricing, setActivePricing] = useState("All");
+  const [activePlatform, setActivePlatform] = useState("All");
   const [activeSort, setActiveSort] = useState("Recently Released");
   
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  
-  // --- NEW: TOOLTIP STATE FOR MOBILE & DESKTOP ---
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
-  // Close tooltip when clicking anywhere else on the page (Mobile fix)
   useEffect(() => {
     const handleGlobalClick = () => setActiveTooltip(null);
     window.addEventListener('click', handleGlobalClick);
     return () => window.removeEventListener('click', handleGlobalClick);
   }, []);
 
-  // --- DEBOUNCE SEARCH ---
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -76,12 +80,32 @@ export default function RepositoryPage() {
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
-  // Reset pagination when any filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch, activeTask, activeCompute, activePricing, activeSort]);
+  }, [debouncedSearch, activeCategoryId, activeCompute, activePricing, activePlatform, activeSort]);
 
-  // --- POCKETBASE FETCHING LOGIC ---
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const records = await pb.collection('categories').getFullList({
+          sort: 'name', 
+          requestKey: null,
+        });
+        
+        const formattedCats = [
+          { id: "all", name: "All" },
+          ...records.map(r => ({ id: r.id, name: r.Name || r.name || "Unnamed" }))
+        ];
+        
+        setCategories(formattedCats);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        setCategories([{ id: "all", name: "All" }]);
+      }
+    }
+    fetchCategories();
+  }, []);
+
   useEffect(() => {
     async function fetchModels() {
       setIsLoading(true);
@@ -92,8 +116,8 @@ export default function RepositoryPage() {
           filterArr.push(`(Name ~ "${debouncedSearch}" || author ~ "${debouncedSearch}")`);
         }
         
-        if (activeTask !== "All") {
-          filterArr.push(`category ~ "${getDbCategory(activeTask)}"`);
+        if (activeCategoryId !== "all") {
+          filterArr.push(`categoies ~ "${activeCategoryId}"`);
         }
         
         if (activeCompute !== "All") {
@@ -102,6 +126,10 @@ export default function RepositoryPage() {
         
         if (activePricing !== "All") {
           filterArr.push(`is_free = ${activePricing === "Free" ? true : false}`);
+        }
+
+        if (activePlatform !== "All") {
+          filterArr.push(`platforms ~ "${activePlatform}"`);
         }
         
         const filterString = filterArr.join(" && ");
@@ -115,23 +143,32 @@ export default function RepositoryPage() {
         const res = await pb.collection("apps").getList(currentPage, ITEMS_PER_PAGE, {
           filter: filterString,
           sort: sortString,
+          expand: 'categoies', 
           requestKey: null
         });
 
-        const formattedModels = res.items.map((record) => ({
-          id: record.id,
-          name: record.Name,
-          author: record.author || "Community",
-          iconUrl: pb.files.getURL(record, record.icon),
-          task: formatDbCategory(record.category?.[0]),
-          compute: record.type?.toLowerCase() === "cloud" ? "Cloud" : "Local",
-          pricing: record.is_free ? "Free" : "Paid",
-          cost: record.coin || 0,
-          updated: timeAgo(record.updated),
-          size: record.size,
-          description: record.shortDescription || "Experience powerful AI capabilities.",
-          sourceUrl: record.source_url || ""
-        }));
+        const formattedModels = res.items.map((record) => {
+          const expandedCats = record.expand?.categoies;
+          const categoryName = expandedCats && expandedCats.length > 0 
+            ? (expandedCats[0].Name || expandedCats[0].name) 
+            : "Utility";
+
+          return {
+            id: record.id,
+            slug: record.slug || record.id, // Extract slug with a fallback to ID
+            name: record.Name,
+            author: record.author || "Community",
+            iconUrl: pb.files.getURL(record, record.icon),
+            task: categoryName,
+            compute: record.type?.toLowerCase() === "cloud" ? "Cloud" : "Local",
+            pricing: record.is_free ? "Free" : "Paid",
+            cost: record.coin || 0,
+            updated: timeAgo(record.updated),
+            size: record.size,
+            description: record.shortDescription || "Experience powerful AI capabilities.",
+            sourceUrl: record.source_url || ""
+          };
+        });
 
         setModels(formattedModels);
         setTotalPages(res.totalPages);
@@ -147,19 +184,7 @@ export default function RepositoryPage() {
     }
 
     fetchModels();
-  }, [currentPage, debouncedSearch, activeTask, activeCompute, activePricing, activeSort]);
-
-  // Icons specifically mapped to your Database Categories
-  const TaskIcons: Record<string, React.ReactNode> = {
-    "Text": <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25z" /></svg>,
-    "Image": <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>,
-    "Vision": <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
-    "Audio": <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>,
-    "Video": <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>,
-    "TTS": <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.898a9 9 0 010 12.728M5.5 10.5h-1a1 1 0 00-1 1v1a1 1 0 001 1h1m4.5-5.5L6.5 10.5m3 3L6.5 13.5m3 3v-9" /></svg>,
-    "LLM": <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
-    "BG Remover": <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>,
-  };
+  }, [currentPage, debouncedSearch, activeCategoryId, activeCompute, activePricing, activePlatform, activeSort]);
 
   return (
     <main className="min-h-screen bg-[#050508] text-gray-100 font-sans flex flex-col">
@@ -167,7 +192,6 @@ export default function RepositoryPage() {
 
       <div className="flex-grow w-full max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 py-6 flex flex-col md:flex-row gap-8 pb-24 md:pb-12">
         
-        {/* --- MOBILE FILTER TOGGLE --- */}
         <button 
           onClick={() => setShowMobileFilters(!showMobileFilters)}
           className="md:hidden w-full bg-[#0e0e0e] border border-zinc-800 text-white rounded-xl py-3 px-4 flex justify-between items-center font-medium"
@@ -179,22 +203,21 @@ export default function RepositoryPage() {
           <svg className={`w-5 h-5 transition-transform ${showMobileFilters ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
         </button>
 
-        {/* --- LEFT SIDEBAR (FILTERS) --- */}
         <aside className={`${showMobileFilters ? "block" : "hidden"} md:block w-full md:w-64 shrink-0 space-y-8`}>
           <div>
             <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">Categories</h3>
             <div className="flex flex-wrap gap-2">
-              {TASKS.map(task => (
+              {categories.map(cat => (
                 <button
-                  key={task}
-                  onClick={() => setActiveTask(task)}
+                  key={cat.id}
+                  onClick={() => setActiveCategoryId(cat.id)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
-                    activeTask === task 
+                    activeCategoryId === cat.id 
                       ? "bg-sky-500/10 border-sky-500/50 text-sky-400" 
                       : "bg-[#0a0a0a] border-zinc-800 text-zinc-300 hover:border-zinc-600"
                   }`}
                 >
-                  {task}
+                  {cat.name}
                 </button>
               ))}
             </div>
@@ -243,9 +266,30 @@ export default function RepositoryPage() {
               ))}
             </div>
           </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">Platforms</h3>
+            <div className="flex flex-col gap-2">
+              {PLATFORM_TYPES.map(platform => (
+                <button
+                  key={platform}
+                  onClick={() => setActivePlatform(platform)}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-all text-left ${
+                    activePlatform === platform 
+                      ? "bg-sky-500/10 border-sky-500/50 text-sky-400" 
+                      : "bg-[#0a0a0a] border-transparent hover:border-zinc-800 text-zinc-300"
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-md border flex items-center justify-center ${activePlatform === platform ? "border-sky-400 bg-sky-500/20" : "border-zinc-600"}`}>
+                    {activePlatform === platform && <svg className="w-3 h-3 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                  {platform}
+                </button>
+              ))}
+            </div>
+          </div>
         </aside>
 
-        {/* --- RIGHT MAIN CONTENT --- */}
         <section className="flex-1 min-w-0 flex flex-col">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div className="flex items-center gap-3">
@@ -280,7 +324,6 @@ export default function RepositoryPage() {
             </div>
           </div>
 
-          {/* Model Card Layout Engine */}
           {isLoading ? (
              <div className="w-full py-32 flex justify-center flex-grow">
                <svg className="w-8 h-8 text-sky-500 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -296,12 +339,11 @@ export default function RepositoryPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-grow content-start">
               {models.map(model => (
                 <Link 
-                  href={`/models/${model.id}`} 
+                  href={`/apps/${model.slug}`} 
                   key={model.id}
                   className="relative group bg-[#0e0e0e] border border-zinc-800/80 hover:border-zinc-600 rounded-xl p-4 flex flex-col justify-between transition-all hover:bg-[#12141a]"
                 >
                   
-                  {/* --- FIXED: MOBILE/DESKTOP TOOLTIP --- */}
                   <div 
                     className="absolute top-4 right-4 z-20"
                     onMouseEnter={() => setActiveTooltip(model.id)}
@@ -311,7 +353,6 @@ export default function RepositoryPage() {
                       onClick={(e) => { 
                         e.preventDefault(); 
                         e.stopPropagation(); 
-                        // Toggles visibility exclusively for mobile users on click
                         setActiveTooltip(activeTooltip === model.id ? null : model.id);
                       }} 
                       className="inline-flex w-6 h-6 rounded-full bg-zinc-800/80 text-zinc-400 hover:text-sky-400 items-center justify-center border border-zinc-700/50 backdrop-blur-md transition-colors cursor-help"
@@ -321,7 +362,6 @@ export default function RepositoryPage() {
                       </svg>
                     </span>
                     
-                    {/* Tooltip Wrapper with "pt-2" bridge so the mouse never loses hover */}
                     <div 
                       className={`absolute right-0 top-full pt-2 w-64 z-30 transition-all duration-200 ${
                         activeTooltip === model.id 
@@ -330,9 +370,8 @@ export default function RepositoryPage() {
                       }`}
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
                     >
-                      {/* Tooltip Content Card */}
                       <div className="p-3.5 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl cursor-default">
-                        <p className="text-xs text-zinc-300 leading-relaxed mb-3 whitespace-normal line-clamp-3">
+                        <p className="text-xs text-zinc-300 leading-relaxed mb-3 whitespace-normal">
                           {model.description}
                         </p>
                         {model.sourceUrl && (
@@ -352,16 +391,16 @@ export default function RepositoryPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 mb-5 pr-8">
+                  <div className="flex items-center gap-4 mb-3 pr-6">
                     <div className="shrink-0">
                       {model.iconUrl ? (
                         <img 
                           src={model.iconUrl} 
                           alt={model.name} 
-                          className="w-12 h-12 rounded-xl object-contain bg-zinc-900 border border-zinc-800 p-1.5 shadow-sm" 
+                          className="w-16 h-16 rounded-xl object-contain bg-zinc-900 border border-zinc-800 p-2 shadow-sm" 
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 text-sm text-zinc-400 flex items-center justify-center uppercase font-bold tracking-tighter font-mono shadow-sm">
+                        <div className="w-16 h-16 rounded-xl bg-zinc-900 border border-zinc-800 text-sm text-zinc-400 flex items-center justify-center uppercase font-bold tracking-tighter font-mono shadow-sm">
                           {model.author.slice(0, 2)}
                         </div>
                       )}
@@ -371,16 +410,19 @@ export default function RepositoryPage() {
                       <h2 className="text-lg font-bold text-white truncate group-hover:text-sky-400 transition-colors leading-tight">
                         {model.name}
                       </h2>
-                      <span className="text-xs text-zinc-500 truncate mt-0.5 font-medium">
+                      <span className="text-xs text-zinc-500 truncate mt-1 font-medium">
                         {model.author}
                       </span>
                     </div>
                   </div>
 
-                  {/* Badges */}
+                  <p className="text-sm text-zinc-400 leading-relaxed line-clamp-2 mb-4">
+                    {model.description}
+                  </p>
+
                   <div className="flex flex-wrap gap-2 mb-4">
                     <div className="flex items-center gap-1.5 px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-xs text-zinc-400">
-                      {TaskIcons[model.task] || TaskIcons["Text"]} {model.task}
+                      {getTaskIcon(model.task)} {model.task}
                     </div>
                     <div className={`flex items-center gap-1.5 px-2 py-0.5 border rounded text-xs ${model.compute === 'Local' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-purple-500/10 border-purple-500/20 text-purple-400'}`}>
                        {model.compute}
@@ -396,7 +438,6 @@ export default function RepositoryPage() {
                     )}
                   </div>
 
-                  {/* Clean Bottom Metadata Row */}
                   <div className="flex items-center gap-3 text-xs text-zinc-500 font-mono mt-auto pt-3 border-t border-zinc-800/50">
                     <span className="flex items-center gap-1.5 text-zinc-400 bg-zinc-900 border border-zinc-800/60 px-2 py-0.5 rounded font-bold" title={model.compute === "Cloud" ? "Coin Cost" : "Model Size"}>
                       {model.compute === "Cloud" ? (
@@ -424,7 +465,6 @@ export default function RepositoryPage() {
             </div>
           )}
 
-          {/* --- PAGINATION CONTROLS --- */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-8 pt-6 border-t border-zinc-800/50">
               <button 

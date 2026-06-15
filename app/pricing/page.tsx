@@ -1,9 +1,13 @@
 'use client';
 
-import React, { useState, useMemo } from "react";
-import Link from "next/link";
+import React, { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import PocketBase from "pocketbase";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+
+// Initialize PocketBase (Update URL for production)
+const pb = new PocketBase("http://127.0.0.1:8090");
 
 // --- CONSTANTS ---
 const COINS_PER_DOLLAR = 35;
@@ -106,10 +110,48 @@ const YEARLY_PLANS = [
   },
 ];
 
+// --- MOCK TRANSACTIONS ---
+const MOCK_TRANSACTIONS = [
+  {
+    id: 1,
+    date: "2026-06-01",
+    type: "Subscription",
+    credits: 1500,
+    amount: 29.0,
+    status: "completed",
+  },
+  {
+    id: 2,
+    date: "2026-05-15",
+    type: "Top Up",
+    credits: 350,
+    amount: 10.0,
+    status: "completed",
+  },
+  {
+    id: 3,
+    date: "2026-04-20",
+    type: "Credit Use",
+    credits: -45,
+    amount: 0,
+    status: "completed",
+  },
+];
+
 export default function Pricing() {
+  const router = useRouter();
+  
   // --- STATE ---
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [amount, setAmount] = useState<string>(MIN_CUSTOM_TOP_UP_USD.toString());
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [subscribingId, setSubscribingId] = useState<string | null>(null);
   const [billingMode, setBillingMode] = useState<"one-time" | "monthly" | "yearly">("one-time");
+
+  // Check auth state silently in the background
+  useEffect(() => {
+    setIsLoggedIn(pb.authStore.isValid);
+  }, []);
 
   // --- HELPERS ---
   const calculatedCoins = useMemo(() => {
@@ -117,6 +159,25 @@ export default function Pricing() {
     if (isNaN(val) || val < 0) return 0;
     return Math.floor(val * COINS_PER_DOLLAR);
   }, [amount]);
+
+  // --- HANDLERS ---
+  const handleOneTimePayment = () => {
+    if (!isLoggedIn) {
+      router.push("/login");
+      return;
+    }
+    setIsProcessing(true);
+    setTimeout(() => setIsProcessing(false), 1500);
+  };
+
+  const handleSubscription = (planId: string) => {
+    if (!isLoggedIn) {
+      router.push("/login");
+      return;
+    }
+    setSubscribingId(planId);
+    setTimeout(() => setSubscribingId(null), 1500);
+  };
 
   // --- COMPONENT: Plan Cards ---
   const renderPlanCards = (plans: typeof MONTHLY_PLANS, isYearly = false) => (
@@ -175,17 +236,24 @@ export default function Pricing() {
           </div>
 
           <div className="mt-auto">
-            <Link
-              href="/billing"
+            <button
+              onClick={() => handleSubscription(plan.id)}
+              disabled={subscribingId === plan.id}
               className={`w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
                 plan.popular
                   ? "bg-[#252836] hover:bg-[#2d303f] text-white border border-zinc-700/50" 
                   : "bg-zinc-800 hover:bg-zinc-700 text-white"
               }`}
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.996 2.001L2 7.828l9.996 5.827 9.996-5.827-9.996-5.827zm0 13.655L3.896 10.93v2.898L11.996 19.655l8.1-5.827V10.93l-8.1 4.726z"/></svg>
-              Subscribe Now
-            </Link>
+              {subscribingId === plan.id ? (
+                <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.996 2.001L2 7.828l9.996 5.827 9.996-5.827-9.996-5.827zm0 13.655L3.896 10.93v2.898L11.996 19.655l8.1-5.827V10.93l-8.1 4.726z"/></svg>
+                  {isLoggedIn ? "Subscribe Now" : "Login to Subscribe"}
+                </>
+              )}
+            </button>
           </div>
         </div>
       ))}
@@ -253,7 +321,7 @@ export default function Pricing() {
         </div>
 
         {/* --- DYNAMIC VIEWS --- */}
-        <div className="min-h-[400px] w-full mb-12">
+        <div className="min-h-[400px] w-full">
           {/* VIEW 1: ONE-TIME PAYMENT */}
           {billingMode === "one-time" && (
             <div className="flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-500 px-4">
@@ -296,12 +364,17 @@ export default function Pricing() {
                     </p>
                   </div>
 
-                  <Link
-                    href="/billing"
+                  <button
+                    onClick={handleOneTimePayment}
+                    disabled={isProcessing}
                     className="w-full bg-[#252836] hover:bg-[#2d303f] border border-zinc-700/50 text-white font-bold h-12 text-base rounded-xl transition-all flex items-center justify-center"
                   >
-                    Continue to Checkout
-                  </Link>
+                    {isProcessing ? (
+                      <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    ) : (
+                      isLoggedIn ? "Continue to Checkout" : "Login to Checkout"
+                    )}
+                  </button>
                   <p className="text-[10px] text-zinc-500 text-center">
                     Secure global checkout. Minimum purchase $
                     {MIN_CUSTOM_TOP_UP_USD}.
@@ -323,9 +396,93 @@ export default function Pricing() {
             </div>
           )}
         </div>
+
+        {/* --- TRANSACTION HISTORY (RESTORED & OPTIMIZED) --- */}
+        {/* We only show the transaction history table to logged-in users */}
+        {isLoggedIn && (
+          <section className="mt-20 pt-10 border-t border-zinc-800/60 max-w-4xl mx-auto px-4">
+            <div className="flex items-center gap-2 mb-6">
+              <svg
+                className="h-5 w-5 text-zinc-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h2 className="text-xl font-bold text-white">
+                Transaction History
+              </h2>
+            </div>
+
+            <div className="bg-[#0e0e0e] border border-zinc-800 rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto hide-scrollbar">
+                <table className="w-full text-left border-collapse min-w-[600px]">
+                  <thead className="bg-[#0a0a0a] border-b border-zinc-800">
+                    <tr>
+                      <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider text-right">
+                        Credits
+                      </th>
+                      <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider text-right">
+                        Amount
+                      </th>
+                      <th className="p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider text-center">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/60">
+                    {MOCK_TRANSACTIONS.map((txn) => (
+                      <tr
+                        key={txn.id}
+                        className="hover:bg-zinc-900/30 transition-colors"
+                      >
+                        <td className="p-4 text-sm text-zinc-300 font-mono">
+                          {txn.date}
+                        </td>
+                        <td className="p-4 text-sm text-zinc-200">{txn.type}</td>
+                        <td
+                          className={`p-4 text-sm text-right font-bold ${txn.credits > 0 ? "text-emerald-400" : "text-zinc-400"}`}
+                        >
+                          {txn.credits > 0 ? "+" : ""}
+                          {txn.credits}
+                        </td>
+                        <td className="p-4 text-sm text-zinc-400 text-right">
+                          {txn.amount > 0 ? `$${txn.amount.toFixed(2)}` : "-"}
+                        </td>
+                        <td className="p-4 text-center">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase">
+                            {txn.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        )}
       </div>
 
       <Footer />
+
+      <style dangerouslySetInnerHTML={{__html: `
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}} />
     </main>
   );
 }

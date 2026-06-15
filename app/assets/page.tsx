@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import ProtectedRoute from "../components/ProtectedRoute";
 
 // --- Types ---
 interface DisplayItem {
@@ -84,6 +85,7 @@ export default function AssetsPage() {
   };
 
   return (
+    <ProtectedRoute>
     <main className="min-h-screen bg-[#0a0a0a] text-gray-100 font-sans flex flex-col">
       <Navbar />
 
@@ -340,5 +342,6 @@ export default function AssetsPage() {
         }
       `}} />
     </main>
+    </ProtectedRoute>
   );
 }

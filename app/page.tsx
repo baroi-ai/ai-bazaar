@@ -42,6 +42,7 @@ export default function Home() {
       try {
         const formatApp = (record: any) => ({
           id: record.id,
+          slug: record.slug || record.id, // Extract slug with a fallback to ID
           name: record.Name,
           title: record.Name,
           category: record.category?.[0] || "AI Model",
@@ -265,15 +266,11 @@ export default function Home() {
 
             <div ref={topChartsRef} onScroll={handleTopChartsScroll} className="grid grid-rows-3 grid-flow-col md:grid-rows-none md:grid-flow-row md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 md:gap-x-6 gap-y-4 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none hide-scrollbar pb-2 md:pb-0 scroll-smooth">
               {topCharts.map((app, index) => (
-                <div key={app.id} className="flex items-center group cursor-pointer p-2 rounded-xl hover:bg-zinc-800/50 border border-transparent hover:border-zinc-800 transition w-[85vw] sm:w-[350px] md:w-auto shrink-0 snap-center md:snap-align-none">
+                <Link key={app.id} href={`/apps/${app.slug}`} className="flex items-center group cursor-pointer p-2 rounded-xl hover:bg-zinc-800/50 border border-transparent hover:border-zinc-800 transition w-[85vw] sm:w-[350px] md:w-auto shrink-0 snap-center md:snap-align-none">
                   <span className="text-zinc-500 w-6 text-sm font-medium text-center">{index + 1}</span>
                   
                   <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#0e0e0e] border border-zinc-800 flex items-center justify-center shadow-sm overflow-hidden ml-2 p-2.5 md:p-3 shrink-0">
-                    {app.badge ? (
-                      <span className={`absolute top-1 right-1 backdrop-blur-md text-[6px] md:text-[8px] font-bold px-1 py-0.5 rounded border uppercase tracking-wider z-10 ${getBadgeStyles(app.badge)}`}>
-                        {app.badge}
-                      </span>
-                    ) : null}
+
                     <img src={app.iconUrl} alt={`${app.name} logo`} className="w-full h-full object-contain relative z-0" />
                   </div>
 
@@ -294,7 +291,7 @@ export default function Home() {
                       )}
                     </span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
 
@@ -324,7 +321,7 @@ export default function Home() {
 
             <div className="flex flex-row overflow-x-auto gap-4 md:gap-6 pb-6 hide-scrollbar snap-x snap-mandatory">
               {latestModels.map((app) => (
-                <div key={app.id} className="w-[28vw] sm:w-32 md:w-36 flex flex-col group cursor-pointer shrink-0 snap-start">
+                <Link key={app.id} href={`/apps/${app.slug}`} className="w-[28vw] sm:w-32 md:w-36 flex flex-col group cursor-pointer shrink-0 snap-start">
                   <div className="relative w-full aspect-square rounded-2xl md:rounded-3xl bg-[#0e0e0e] border border-zinc-800 flex items-center justify-center shadow-sm group-hover:border-sky-500/50 transition mb-2 md:mb-3 overflow-hidden p-3.5 md:p-6">
                     {app.badge ? (
                       <span className={`absolute top-2 right-2 backdrop-blur-md text-[8px] md:text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider z-10 ${getBadgeStyles(app.badge)}`}>
@@ -347,7 +344,7 @@ export default function Home() {
                       app.size
                     )}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           </section>
@@ -365,7 +362,7 @@ export default function Home() {
 
             <div className="flex flex-row overflow-x-auto gap-4 md:gap-6 pb-6 hide-scrollbar snap-x snap-mandatory">
               {premiumApps.map((app) => (
-                <div key={app.id} className="w-[28vw] sm:w-32 md:w-36 flex flex-col group cursor-pointer shrink-0 snap-start">
+                <Link key={app.id} href={`/apps/${app.slug}`} className="w-[28vw] sm:w-32 md:w-36 flex flex-col group cursor-pointer shrink-0 snap-start">
                   <div className="relative w-full aspect-square rounded-2xl md:rounded-3xl bg-[#0e0e0e] border border-zinc-800 flex items-center justify-center shadow-sm group-hover:border-sky-500/50 transition mb-2 md:mb-3 overflow-hidden p-3.5 md:p-6">
                     {app.badge ? (
                       <span className={`absolute top-2 right-2 backdrop-blur-md text-[8px] md:text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider z-10 ${getBadgeStyles(app.badge)}`}>
@@ -388,7 +385,7 @@ export default function Home() {
                       app.size
                     )}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           </section>
@@ -406,7 +403,7 @@ export default function Home() {
 
             <div className="flex flex-row overflow-x-auto gap-4 md:gap-6 pb-6 hide-scrollbar snap-x snap-mandatory">
               {localApps.map((app) => (
-                <div key={app.id} className="w-[28vw] sm:w-32 md:w-36 flex flex-col group cursor-pointer shrink-0 snap-start">
+                <Link key={app.id} href={`/apps/${app.slug}`} className="w-[28vw] sm:w-32 md:w-36 flex flex-col group cursor-pointer shrink-0 snap-start">
                   <div className="relative w-full aspect-square rounded-2xl md:rounded-3xl bg-[#0e0e0e] border border-zinc-800 flex items-center justify-center shadow-sm group-hover:border-sky-500/50 transition mb-2 md:mb-3 overflow-hidden p-3.5 md:p-6">
                     {app.badge ? (
                       <span className={`absolute top-2 right-2 backdrop-blur-md text-[8px] md:text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider z-10 ${getBadgeStyles(app.badge)}`}>
@@ -429,7 +426,7 @@ export default function Home() {
                       app.size
                     )}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           </section>
