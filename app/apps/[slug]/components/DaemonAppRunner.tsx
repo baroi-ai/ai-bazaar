@@ -9,27 +9,33 @@ import {
   ExternalLink, 
   StopCircle,
   X,
-  Download,
-  Smartphone,
-  Trash2
+  Download
 } from "lucide-react";
 
 type DaemonAppRunnerProps = {
   appName: string;
   appSlug: string;
-  scriptUrl: string; 
+  appIcon?: string; // Icon image filename string from PocketBase
+  appId?: string;   // ID for icon asset building path
+  downloadLinks: {
+    github_url: string;
+    environments: string[];
+    install_commands: string[][];
+    start_command: string[];
+  };
 };
 
-export default function DaemonAppRunner({ appName, appSlug, scriptUrl }: DaemonAppRunnerProps) {
+export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId = "", downloadLinks }: DaemonAppRunnerProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
   
   const [status, setStatus] = useState<"idle" | "installing" | "running" | "stopping" | "error">("idle");
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDaemonOffline, setIsDaemonOffline] = useState(false);
   
   const [appUrl, setAppUrl] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
+  const [progressLogs, setProgressLogs] = useState<Record<string, string>>({});
   
   const [showDaemonModal, setShowDaemonModal] = useState(false);
   const [showTerminalModal, setShowTerminalModal] = useState(false);
@@ -49,80 +55,137 @@ export default function DaemonAppRunner({ appName, appSlug, scriptUrl }: DaemonA
       setIsMobile(true);
     }
 
-    if (scriptUrl) {
-      fetch("http://127.0.0.1:4500/check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: scriptUrl })
-      })
-      .then(res => res.json())
-      .then(data => setIsInstalled(data.installed))
-      .catch(() => { /* Daemon is likely offline, ignore silently */ });
+    if (downloadLinks?.github_url) {
+      try {
+        fetch("http://127.0.0.1:4500/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ github_url: downloadLinks.github_url, slug: appSlug })
+        })
+        .then(res => res.json())
+        .then(data => {
+          setIsInstalled(data.installed);
+          setIsDaemonOffline(false);
+        })
+        .catch(() => { 
+          setIsDaemonOffline(true); 
+        });
+      } catch (err) {
+        setIsDaemonOffline(true);
+      }
     }
 
     return () => {
       if (wsRef.current) wsRef.current.close();
     };
-  }, [scriptUrl]);
+  }, [downloadLinks, appSlug]);
 
   useEffect(() => {
     if (logContainerRef.current) {
       logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
     }
-  }, [logs, showTerminalModal]);
+  }, [logs, progressLogs, showTerminalModal]);
 
-  const handleInstallClick = () => {
+  const handleInstallClick = async () => {
     if (isMobile) {
       setShowMobileModal(true);
       return;
     }
-    if (!scriptUrl) {
-      alert("Error: Docker Image URL is missing from the database.");
+
+    if (!downloadLinks?.github_url) {
+      alert("Error: GitHub config details missing from PocketBase.");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://127.0.0.1:4500/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ github_url: downloadLinks.github_url, slug: appSlug }),
+        signal: AbortSignal.timeout(1500)
+      }).catch(() => { throw new Error("Offline"); });
+      
+      if (!res.ok) throw new Error("Offline");
+      
+      const data = await res.json();
+      setIsInstalled(data.installed);
+      setIsDaemonOffline(false); 
+    } catch (err) {
+      setIsDaemonOffline(true);
+      setShowDaemonModal(true);
       return;
     }
 
     setShowTerminalModal(true);
     setStatus("installing");
     setLogs([]);
+    setProgressLogs({});
     appendLog(`SYSTEM: Connecting to AI Bazaar Local Daemon...`);
 
     const ws = new WebSocket('ws://127.0.0.1:4500/ws');
     wsRef.current = ws;
 
     ws.onopen = () => {
-      appendLog(`SYSTEM: Connected! Sending launch command for ${appName}...`);
+      appendLog(`SYSTEM: Connected! Transmitting custom Pixi deployment blueprint...`);
       ws.send(JSON.stringify({ 
         action: 'RUN', 
-        image: scriptUrl, 
-        port: '8899',      
-        slug: appSlug
+        slug: appSlug,
+        app_name: appName,
+        app_icon: appIcon,
+        app_id: appId,
+        github_url: downloadLinks.github_url,
+        environments: downloadLinks.environments,
+        install_commands: downloadLinks.install_commands,
+        start_command: downloadLinks.start_command,
+        port: '8899'
       }));
     };
 
     ws.onmessage = (event) => {
       const msg = event.data;
+
+      if (msg.startsWith("PROGRESS|")) {
+        const parts = msg.split("|");
+        if (parts.length >= 3) {
+          const id = parts[1];
+          const text = parts.slice(2).join("|");
+          if (text.trim() === "") {
+             setProgressLogs(prev => {
+                const updated = {...prev};
+                delete updated[id];
+                return updated;
+             });
+          } else {
+             setProgressLogs(prev => ({ ...prev, [id]: text }));
+          }
+        }
+        return; 
+      }
+
       appendLog(msg);
 
-      if (msg.includes("App already installed!") || msg.includes("Booting up AI Engine")) {
+      if (msg.includes("🚀 ONLINE:") || msg.includes("Booting up AI Engine")) {
         setStatus("running");
         setIsInstalled(true); 
         setAppUrl("http://127.0.0.1:8899");
+        setProgressLogs({});
       }
 
-      if (msg.includes("❌ Download failed") || msg.includes("❌ Download Cancelled")) {
+      if (msg.includes("❌ ERROR:") || msg.includes("❌ Download Cancelled")) {
         setStatus("error");
+        setProgressLogs({});
       }
     };
 
     ws.onerror = () => {
       setStatus("error");
-      setShowDaemonModal(true);
+      setIsDaemonOffline(true);
       if (wsRef.current) wsRef.current.close();
     };
 
     ws.onclose = () => {
       setStatus((prev) => {
-        if (prev !== "stopping" && !isDeleting) {
+        if (prev !== "stopping") {
           appendLog(`SYSTEM: Daemon connection closed.`);
           setAppUrl(null);
           return "idle";
@@ -134,6 +197,7 @@ export default function DaemonAppRunner({ appName, appSlug, scriptUrl }: DaemonA
 
   const handleStopClick = async () => {
     setStatus("stopping");
+    setProgressLogs({});
     appendLog(`SYSTEM: Sending termination signal...`);
 
     try {
@@ -143,55 +207,10 @@ export default function DaemonAppRunner({ appName, appSlug, scriptUrl }: DaemonA
         body: JSON.stringify({ slug: appSlug }) 
       });
     } catch (e) {
-      console.warn("Failed to reach daemon for stopping.", e);
+      console.warn(e);
     }
 
-    if (wsRef.current) {
-      wsRef.current.close();
-      appendLog(`SYSTEM: Disconnected and safely terminated process.`);
-    }
-    
-    setStatus("idle");
-    setAppUrl(null);
-  };
-
-  const handleDeleteClick = async () => {
-    setIsDeleting(true);
-    appendLog(`SYSTEM: Initiating complete uninstallation...`);
-
-    try {
-      await fetch("http://127.0.0.1:4500/stop", { 
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug: appSlug }) 
-      });
-      appendLog(`SYSTEM: App container safely stopped.`);
-    } catch (e) {
-      console.warn("Stop failed during deletion", e);
-    }
-
-    try {
-      const res = await fetch("http://127.0.0.1:4500/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: scriptUrl })
-      });
-      
-      if (res.ok) {
-        appendLog(`✅ SYSTEM: AI models securely deleted from local storage.`);
-        setIsInstalled(false);
-      } else {
-        appendLog(`❌ ERROR: Failed to delete app files.`);
-      }
-    } catch (e) {
-      appendLog(`❌ ERROR: Failed to communicate with Daemon for deletion.`);
-    }
-
-    if (wsRef.current) {
-      wsRef.current.close();
-    }
-    
-    setIsDeleting(false);
+    if (wsRef.current) wsRef.current.close();
     setStatus("idle");
     setAppUrl(null);
   };
@@ -205,24 +224,12 @@ export default function DaemonAppRunner({ appName, appSlug, scriptUrl }: DaemonA
               onClick={handleInstallClick}
               className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white font-extrabold text-lg shadow-[0_0_20px_rgba(37,99,235,0.3)] transition-all active:scale-95"
             >
-              <Play className="w-5 h-5 fill-current" /> {isInstalled ? "Launch App" : "Install & Run Locally"}
+              <Play className="w-5 h-5 fill-current" /> {isInstalled && !isDaemonOffline ? "Launch App" : "Install & Run Locally"}
             </button>
-            {isInstalled && (
-              <button
-                onClick={() => {
-                  setShowTerminalModal(true);
-                  handleDeleteClick();
-                }}
-                className="flex items-center justify-center px-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 transition-colors"
-                title="Uninstall App"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-            )}
           </div>
         )}
 
-        {(status === "installing" || status === "error") && !isDeleting && (
+        {(status === "installing" || status === "error") && (
           <div className="flex gap-2 w-full">
             <button 
               onClick={() => setShowTerminalModal(true)}
@@ -235,53 +242,20 @@ export default function DaemonAppRunner({ appName, appSlug, scriptUrl }: DaemonA
               <Terminal className="w-5 h-5" /> 
               {status === "error" ? "Installation Failed" : "Downloading AI Engine..."}
             </button>
-            
-            {/* Quick Cancel Button on Main Page during Download */}
-            {status === "installing" && (
-              <button
-                onClick={handleStopClick}
-                className="flex items-center justify-center px-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 transition-colors"
-                title="Cancel Download"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
           </div>
         )}
 
-        {(status === "running" || status === "stopping" || isDeleting) && appUrl && (
+        {(status === "running" || status === "stopping") && appUrl && (
           <div className="flex flex-col gap-2 w-full">
-            <a 
-              href={appUrl} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95"
-            >
+            <a href={appUrl} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95">
               <ExternalLink className="w-5 h-5" /> Open App Interface
             </a>
             <div className="flex gap-2 w-full">
               <button onClick={() => setShowTerminalModal(true)} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-bold transition-colors">
                 <Terminal className="w-4 h-4" /> View Logs
               </button>
-              <button 
-                onClick={handleStopClick} 
-                disabled={status === "stopping" || isDeleting}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-bold transition-colors ${
-                  status === "stopping" || isDeleting
-                  ? "bg-zinc-800 border-zinc-700 text-zinc-500 cursor-not-allowed" 
-                  : "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20 text-amber-500"
-                }`}
-              >
-                {status === "stopping" ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-zinc-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    Stopping...
-                  </>
-                ) : (
-                  <>
-                    <StopCircle className="w-4 h-4" /> Disconnect
-                  </>
-                )}
+              <button onClick={handleStopClick} disabled={status === "stopping"} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-bold transition-colors bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20 text-amber-500">
+                Stop Run
               </button>
             </div>
           </div>
@@ -290,72 +264,79 @@ export default function DaemonAppRunner({ appName, appSlug, scriptUrl }: DaemonA
 
       {mounted && createPortal(
         <>
-          {showMobileModal && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-              <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl relative">
-                <button onClick={() => setShowMobileModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors">
+          {showMobileModal && ( <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">...</div> )}
+          
+          {showDaemonModal && ( 
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+              <div className="bg-[#0c0c0e] border border-zinc-800 p-6 rounded-2xl max-w-md w-full text-center shadow-2xl relative">
+                <button 
+                  onClick={() => setShowDaemonModal(false)}
+                  className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
                   <X className="w-5 h-5" />
                 </button>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-4 border border-blue-500/20">
-                    <Smartphone className="w-8 h-8 text-blue-500" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Desktop Required</h3>
-                  <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
-                    Local AI daemon apps require a desktop operating system (Windows, Mac, or Linux) to run native processes. Please revisit this page on your computer.
-                  </p>
-                  <button onClick={() => setShowMobileModal(false)} className="w-full py-3 px-4 bg-zinc-100 hover:bg-white text-black font-bold rounded-xl transition-colors">
-                    Got it
+                
+                <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-4 border border-amber-500/20">
+                  <AlertTriangle className="w-6 h-6 text-amber-400" />
+                </div>
+                
+                <h3 className="text-xl font-black text-zinc-100 tracking-tight">AI Bazaar Engine Offline</h3>
+                <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
+                  The local backend daemon isn't running. Kindly download and open the engine daemon app to host local models directly from your web interface.
+                </p>
+                
+                <div className="mt-5 flex flex-col gap-2">
+                  <a 
+                    href="https://github.com/YOUR_ORG/YOUR_REPO/releases" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-black font-bold text-sm transition-all"
+                  >
+                    <Download className="w-4 h-4" /> Download AI Bazaar Daemon
+                  </a>
+                  <button 
+                    onClick={() => setShowDaemonModal(false)}
+                    className="w-full py-2.5 text-zinc-500 hover:text-zinc-300 font-medium text-xs transition-colors"
+                  >
+                    Dismiss
                   </button>
                 </div>
               </div>
-            </div>
-          )}
-
-          {showDaemonModal && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-              <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl relative">
-                <button onClick={() => setShowDaemonModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mb-4 border border-rose-500/20">
-                    <AlertTriangle className="w-8 h-8 text-rose-500" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Daemon Not Found</h3>
-                  <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
-                    To run {appName} securely on your hardware, you need to start the AI Bazaar Local Bridge. 
-                  </p>
-                  <div className="w-full bg-black border border-zinc-800 rounded-lg p-4 mb-6 font-mono text-sm text-zinc-300 flex items-center justify-center">
-                    ./ai-bazaar-daemon
-                  </div>
-                  <a href="#" className="w-full py-3 px-4 flex items-center justify-center gap-2 bg-zinc-100 hover:bg-white text-black font-bold rounded-xl transition-colors">
-                    <Download className="w-4 h-4" /> Download Daemon Setup
-                  </a>
-                </div>
-              </div>
-            </div>
+            </div> 
           )}
 
           {showTerminalModal && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10 bg-black/90 backdrop-blur-md animate-in fade-in">
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10 bg-black/90 backdrop-blur-md">
               <div className="bg-[#050505] border border-zinc-800 rounded-2xl w-full max-w-4xl h-[70vh] flex flex-col shadow-2xl relative overflow-hidden">
-                <div className="flex items-center justify-between bg-zinc-950 px-4 py-3 border-b border-zinc-900">
-                  <div className="flex items-center gap-2">
-                    <Terminal className="w-4 h-4 text-zinc-500" />
-                    <span className="text-xs font-mono font-bold text-zinc-400">daemon_execution :: {appSlug}</span>
+                <div className="flex items-center justify-between bg-zinc-950 px-4 py-3 border-b border-zinc-900 gap-4">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <Terminal className="w-4 h-4 text-zinc-500 shrink-0" />
+                    <span className="text-xs font-mono font-bold text-zinc-400 truncate">daemon :: {appSlug}</span>
                   </div>
-                  <div className="flex items-center gap-4">
-                    {(status === "running" || status === "stopping" || isDeleting) && (
-                      <span className={`flex items-center gap-2 text-xs font-bold ${(status === "stopping" || isDeleting) ? "text-amber-500" : "text-emerald-500"}`}>
-                        <span className="relative flex h-2 w-2">
-                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${(status === "stopping" || isDeleting) ? "bg-amber-400" : "bg-emerald-400"}`}></span>
-                          <span className={`relative inline-flex rounded-full h-2 w-2 ${(status === "stopping" || isDeleting) ? "bg-amber-500" : "bg-emerald-500"}`}></span>
-                        </span>
-                        {(status === "stopping" || isDeleting) ? "Processing..." : "Online"}
-                      </span>
+                  
+                  <div className="flex items-center gap-2 shrink-0">
+                    {status === "running" && appUrl && (
+                      <a 
+                        href={appUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-extrabold transition-colors shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" /> Open App
+                      </a>
                     )}
-                    <button onClick={() => setShowTerminalModal(false)} className="text-zinc-500 hover:text-white transition-colors bg-zinc-900 hover:bg-zinc-800 rounded p-1">
+
+                    {status !== "idle" && status !== "error" && (
+                      <button 
+                        onClick={handleStopClick} 
+                        disabled={status === "stopping"} 
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20 text-amber-500 disabled:opacity-50"
+                      >
+                        <StopCircle className="w-3.5 h-3.5" /> Stop Run
+                      </button>
+                    )}
+
+                    <button onClick={() => setShowTerminalModal(false)} className="ml-2 text-zinc-500 hover:text-white transition-colors bg-zinc-900 hover:bg-zinc-800 rounded p-1">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -363,82 +344,22 @@ export default function DaemonAppRunner({ appName, appSlug, scriptUrl }: DaemonA
                 
                 <div ref={logContainerRef} className="flex-1 p-5 font-mono text-[13px] overflow-y-auto text-zinc-400 space-y-2 scroll-smooth">
                   {logs.length === 0 && <span className="text-zinc-600">Waiting for output...</span>}
+                  
                   {logs.map((log, i) => {
                     let textClass = "text-zinc-400";
-                    if (log.includes("ERROR") || log.includes("FATAL") || log.includes("❌")) textClass = "text-red-400 font-bold";
-                    if (log.includes("SUCCESS") || log.includes("✅") || log.includes("⚡")) textClass = "text-emerald-400 font-semibold";
-                    if (log.includes("DAEMON:") || log.includes("SYSTEM:") || log.includes("📥")) textClass = "text-amber-400/90";
-                    return <div key={i} className={`border-l-2 border-transparent pl-2 ${textClass}`}>{log}</div>;
+                    if (log.includes("ERROR") || log.includes("❌")) textClass = "text-red-400 font-bold";
+                    if (log.includes("✅") || log.includes("🚀")) textClass = "text-emerald-400 font-semibold";
+                    if (log.includes("SYSTEM:") || log.includes("📥")) textClass = "text-amber-400/90";
+                    if (log.includes("⚙️")) textClass = "text-blue-300";
+                    return <div key={i} className={`pl-2 ${textClass}`}>{log}</div>;
                   })}
+
+                  {Object.values(progressLogs).map((text, i) => (
+                    <div key={`prog-${i}`} className="pl-2 pt-2 text-cyan-400 font-bold animate-pulse">
+                      {text}
+                    </div>
+                  ))}
                 </div>
-
-                {(status === "running" || status === "stopping" || status === "installing" || isDeleting || (status === "idle" && logs.length > 0)) && (
-                  <div className="bg-zinc-950 p-4 border-t border-zinc-900 flex justify-end gap-3">
-                    
-                    {appUrl && status === "running" && (
-                      <a 
-                        href={appUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="flex items-center gap-2 py-2 px-4 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-sm font-bold transition-colors"
-                      >
-                        <ExternalLink className="w-4 h-4" /> Open Interface
-                      </a>
-                    )}
-                    
-                    {/* Disconnect / Cancel Button inside Modal */}
-                    {status !== "idle" && (
-                      <button 
-                        onClick={handleStopClick} 
-                        // UNLOCKED during "installing" so the user can abort!
-                        disabled={status === "stopping" || isDeleting}
-                        className={`flex items-center gap-2 py-2 px-4 rounded-lg border text-sm font-bold transition-colors ${
-                          status === "stopping" || isDeleting
-                          ? "bg-zinc-800 border-zinc-700 text-zinc-500 cursor-not-allowed" 
-                          : "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20 text-amber-500"
-                        }`}
-                      >
-                        {status === "stopping" ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-zinc-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            Stopping...
-                          </>
-                        ) : status === "installing" ? (
-                          <>
-                            <X className="w-4 h-4" /> Cancel Download
-                          </>
-                        ) : (
-                          <>
-                            <StopCircle className="w-4 h-4" /> Disconnect
-                          </>
-                        )}
-                      </button>
-                    )}
-
-                    {/* Uninstall Button */}
-                    <button 
-                      onClick={handleDeleteClick} 
-                      disabled={status === "installing" || status === "stopping" || isDeleting || !isInstalled}
-                      className={`flex items-center gap-2 py-2 px-4 rounded-lg border text-sm font-bold transition-colors ${
-                        status === "installing" || status === "stopping" || isDeleting || !isInstalled
-                        ? "bg-zinc-800 border-zinc-700 text-zinc-500 cursor-not-allowed" 
-                        : "bg-red-500/10 hover:bg-red-500/20 border-red-500/20 text-red-500"
-                      }`}
-                    >
-                      {isDeleting ? (
-                        <>
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-zinc-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                          Uninstalling...
-                        </>
-                      ) : (
-                        <>
-                          <Trash2 className="w-4 h-4" /> Uninstall
-                        </>
-                      )}
-                    </button>
-
-                  </div>
-                )}
               </div>
             </div>
           )}

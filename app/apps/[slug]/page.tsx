@@ -16,7 +16,7 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ImageCarousel from "./components/ImageCarousel";
 import PlatformWarningModal from "./components/PlatformWarningModal";
-import DaemonAppRunner from "./components/DaemonAppRunner"; // <-- ADDED IMPORT
+import DaemonAppRunner from "./components/DaemonAppRunner";
 
 const PB_URL = "http://127.0.0.1:8090";
 
@@ -93,16 +93,19 @@ export default async function AppListingPage({ params }: Props) {
   const hasGithub = Boolean(appData.github_url);
   const hasExternalLinks = hasWebsite || hasGithub;
 
-  const downloadLinks = appData.download_links || {};
+  // PocketBase JSON parsing logic
+  const downloadLinks = typeof appData.download_links === 'string' 
+    ? JSON.parse(appData.download_links) 
+    : (appData.download_links || {});
+
   const hasApk = Boolean(downloadLinks.apk);
   const hasPlaystore = Boolean(downloadLinks.playstore);
   const hasIos = Boolean(downloadLinks.ios);
   const hasDesktop = Boolean(downloadLinks.desktop);
   const hasAnyDownloads = hasApk || hasPlaystore || hasIos || hasDesktop;
 
-  // --- NEW: CHECK IF THIS IS A DAEMON APP ---
+  // --- CHECK IF THIS IS A DAEMON APP ---
   const isDaemonApp = appData.execution_type === 'daemon_uv' || appData.execution_type === 'daemon';
-  const daemonScriptUrl = downloadLinks.script_url || "";
 
   const platformsArray = Array.isArray(appData.platforms) 
     ? appData.platforms 
@@ -143,12 +146,12 @@ export default async function AppListingPage({ params }: Props) {
             {/* ACTION BUTTONS WRAPPER */}
             <div className="w-full flex flex-col gap-3">
               
-              {/* --- NEW: DAEMON RUNNER COMPONENT --- */}
+              {/* --- DAEMON RUNNER COMPONENT --- */}
               {isDaemonApp && (
                 <DaemonAppRunner 
                   appName={appData.Name} 
                   appSlug={appData.slug} 
-                  scriptUrl={daemonScriptUrl} 
+                  downloadLinks={downloadLinks} 
                 />
               )}
 

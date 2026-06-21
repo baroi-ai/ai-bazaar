@@ -23,7 +23,7 @@ export default function MobileNav() {
   // --- 2. CONDITIONAL REDIRECT / HIDE CHECK ---
   const hiddenRoutes = ['/login', '/soon', '/not-found'];
   if (hiddenRoutes.includes(pathname)) {
-    return null; 
+    return null;
   }
 
   // Helper to determine active link color
@@ -35,10 +35,10 @@ export default function MobileNav() {
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
-      
+
       {/* --- POPUP MENU --- */}
       {isMenuOpen && (
-        <div 
+        <div
           ref={menuRef}
           className="absolute bottom-20 left-1/2 -translate-x-1/2 w-40 bg-[#12141d] border border-zinc-800 rounded-xl shadow-2xl p-1.5 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-4 duration-200 z-50"
         >
@@ -63,7 +63,7 @@ export default function MobileNav() {
 
       {/* --- BOTTOM NAVBAR --- */}
       <div className="bg-[#050508] border-t border-zinc-800/80 flex items-center justify-between px-2 h-16 pb-safe relative">
-        
+
         {/* Home */}
         <Link href="/" onClick={() => setIsMenuOpen(false)} className={`flex-1 flex flex-col items-center justify-center gap-1 mt-1 ${getLinkClass('/')}`}>
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
@@ -86,16 +86,16 @@ export default function MobileNav() {
 
         {/* Central FAB (Plus Button) */}
         <div className="flex-1 flex justify-center items-center relative -top-3">
-          <button 
+          <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="w-14 h-14 bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(14,165,233,0.4)] text-[#0a0a0a] transition-transform active:scale-95"
             aria-label="Create Menu"
           >
-            <svg 
-              className={`w-7 h-7 transition-transform duration-300 ${isMenuOpen ? 'rotate-45' : 'rotate-0'}`} 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor" 
+            <svg
+              className={`w-7 h-7 transition-transform duration-300 ${isMenuOpen ? 'rotate-45' : 'rotate-0'}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
               strokeWidth="2"
             >
               <circle cx="12" cy="12" r="9" />
@@ -113,12 +113,12 @@ export default function MobileNav() {
           <span className="text-[10px] font-medium">Assets</span>
         </Link>
 
-        {/* Manager (Swapped out Profile and added the download layout icon) */}
-        <Link href="/manager" onClick={() => setIsMenuOpen(false)} className={`flex-1 flex flex-col items-center justify-center gap-1 mt-1 ${getLinkClass('/manager')}`}>
+        {/* Download / Engine (Swapped out Profile and added the download layout icon) */}
+        <Link href="/download" onClick={() => setIsMenuOpen(false)} className={`flex-1 flex flex-col items-center justify-center gap-1 mt-1 ${getLinkClass('/download')}`}>
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
           </svg>
-          <span className="text-[10px] font-medium">Manager</span>
+          <span className="text-[10px] font-medium">Download</span>
         </Link>
 
       </div>

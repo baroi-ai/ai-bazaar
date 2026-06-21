@@ -113,7 +113,7 @@ export default function Navbar() {
           {/* Manager / Download Icon (Hidden on Mobile) */}
           <div className="hidden md:block">
             <Link
-              href="/manager"
+              href="/download"
               className="text-zinc-400 hover:text-white transition focus:outline-none"
               aria-label="Manager"
             >
