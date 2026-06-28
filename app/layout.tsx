@@ -4,7 +4,8 @@ import "./globals.css";
 import MobileNav from "./components/MobileNav"; // Import Mobile Nav
 import CookieBanner from "./components/CookieBanner";
 import { cn } from "@/lib/utils";
-import { Toaster } from "sonner"; // 1. Import Toaster
+import { Toaster } from "sonner"; 
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -15,7 +16,7 @@ export const viewport: Viewport = {
   themeColor: "#0a0a0a",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // REMOVED: maximumScale: 1 (This allows users to pinch-to-zoom for accessibility)
 };
 
 // GOD-TIER SEO METADATA
@@ -34,9 +35,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Baroi AI", url: "https://aibazaars.store" }],
   creator: "Baroi AI",
   publisher: "Baroi AI",
-  alternates: {
-    canonical: "/",
-  },
+  // REMOVED: alternates: { canonical: "/" } (This lets Next.js handle canonical URLs per-page correctly)
   robots: {
     index: true,
     follow: true,
@@ -76,7 +75,6 @@ export const metadata: Metadata = {
     shortcut: "/logos.png",
     apple: "/logos.png", 
   },
-  manifest: "/site.webmanifest", // Optional: Add a manifest for PWA support
   formatDetection: {
     telephone: false, // Prevents mobile browsers from turning random numbers into blue links
   },
@@ -99,6 +97,7 @@ export default function RootLayout({
         
         {/* 2. Add Toaster globally */}
         <Toaster position="top-right" theme="dark" richColors closeButton />
+        <SpeedInsights />
       </body>
     </html>
   );

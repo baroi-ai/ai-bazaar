@@ -5,8 +5,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import PocketBase from "pocketbase";
 
-// Initialize PocketBase (Update URL for production)
-const pb = new PocketBase("http://127.0.0.1:8090");
+const POCKETBASE_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || "http://127.0.0.1:8090";
+
+// Initialize PocketBase
+export const pb = new PocketBase(POCKETBASE_URL);
 
 export default function Navbar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);

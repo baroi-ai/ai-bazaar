@@ -305,6 +305,7 @@ export default function RepositoryPage() {
               <div className="relative w-full sm:w-64">
                 <input
                   type="text"
+                  aria-label="Filter models by name"
                   placeholder="Filter by name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -315,6 +316,7 @@ export default function RepositoryPage() {
 
               <div className="relative w-full sm:w-auto shrink-0">
                 <select 
+                  aria-label="Sort models"
                   value={activeSort}
                   onChange={(e) => setActiveSort(e.target.value)}
                   className="w-full appearance-none bg-[#0e0e0e] border border-zinc-800 text-zinc-300 text-sm py-2 pl-4 pr-10 rounded-lg focus:outline-none focus:border-sky-500/50 cursor-pointer"
@@ -412,7 +414,7 @@ export default function RepositoryPage() {
                       <h2 className="text-lg font-bold text-white truncate group-hover:text-sky-400 transition-colors leading-tight">
                         {model.name}
                       </h2>
-                      <span className="text-xs text-zinc-500 truncate mt-1 font-medium">
+                      <span className="text-xs text-zinc-400 truncate mt-1 font-medium">
                         {model.author}
                       </span>
                     </div>
