@@ -296,7 +296,7 @@ export default function RepositoryPage() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div className="flex items-center gap-3">
               <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Models</h1>
-              <span className="text-zinc-500 font-mono text-sm px-2 py-0.5 bg-[#0e0e0e] border border-zinc-800 rounded-md">
+              <span className="text-zinc-400 font-mono text-sm px-2 py-0.5 bg-[#0e0e0e] border border-zinc-800 rounded-md">
                 {totalItems.toLocaleString()}
               </span>
             </div>
@@ -442,7 +442,7 @@ export default function RepositoryPage() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs text-zinc-500 font-mono mt-auto pt-3 border-t border-zinc-800/50">
+                  <div className="flex items-center gap-3 text-xs text-zinc-400 font-mono mt-auto pt-3 border-t border-zinc-800/50">
                     <span className="flex items-center gap-1.5 text-zinc-400 bg-zinc-900 border border-zinc-800/60 px-2 py-0.5 rounded font-bold" title={model.compute === "Cloud" ? "Coin Cost" : "Model Size"}>
                       {model.compute === "Cloud" ? (
                         <>

@@ -30,7 +30,7 @@ export default function MobileNav() {
   const getLinkClass = (path: string) => {
     return pathname === path
       ? "text-sky-400"
-      : "text-zinc-500 hover:text-zinc-300 transition-colors";
+      : "text-zinc-400 hover:text-zinc-300 transition-colors";
   };
 
   return (

@@ -11,7 +11,7 @@ export default function Footer() {
   const getLinkStyle = (path: string) => {
     return pathname === path
       ? "text-sky-400 font-medium transition"
-      : "text-zinc-500 hover:text-sky-400 transition";
+      : "text-zinc-400 hover:text-sky-400 transition";
   };
 
   return (
@@ -72,7 +72,7 @@ export default function Footer() {
           
           {/* Left Side: Copyright & Badges */}
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 w-full md:w-auto">
-            <span className="text-xs text-zinc-500 font-medium">
+            <span className="text-xs text-zinc-400 font-medium">
               © {new Date().getFullYear()} Baroi AI. All rights reserved.
             </span>
             
