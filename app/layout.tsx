@@ -5,6 +5,7 @@ import MobileNav from "./components/MobileNav"; // Import Mobile Nav
 import CookieBanner from "./components/CookieBanner";
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner"; // 1. Import Toaster
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -99,6 +100,9 @@ export default function RootLayout({
         
         {/* 2. Add Toaster globally */}
         <Toaster position="top-right" theme="dark" richColors closeButton />
+        
+        {/* Vercel Speed Insights */}
+        <SpeedInsights />
       </body>
     </html>
   );
