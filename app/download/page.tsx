@@ -32,7 +32,7 @@ export default function DownloadEnginePage() {
       <Navbar />
 
       {/* Main Content Wrapper - Adjusted padding for mobile screens */}
-      <div className="flex-1 flex flex-col items-center w-full px-4 py-10 md:py-16 lg:py-24">
+      <div className="flex-1 flex flex-col items-center w-full">
 
         {/* Semantic HTML: Using <section> for SEO structure */}
         <section className="max-w-3xl text-center space-y-5 md:space-y-6 mb-12 md:mb-16 mt-4 md:mt-8">

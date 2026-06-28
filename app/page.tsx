@@ -6,8 +6,10 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import PocketBase from "pocketbase";
 
-// Initialize PocketBase (Change URL if deploying to production)
-const pb = new PocketBase("http://127.0.0.1:8090");
+const POCKETBASE_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || "http://127.0.0.1:8090";
+
+// Initialize PocketBase
+export const pb = new PocketBase(POCKETBASE_URL);
 
 // Helper function to assign sleek, dark-mode friendly colors to different badge types
 const getBadgeStyles = (badge: string) => {

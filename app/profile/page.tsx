@@ -7,8 +7,10 @@ import PocketBase from "pocketbase";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
-// Initialize PocketBase (Update URL for production)
-const pb = new PocketBase("http://127.0.0.1:8090");
+const POCKETBASE_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || "http://127.0.0.1:8090";
+
+// Initialize PocketBase
+export const pb = new PocketBase(POCKETBASE_URL);
 
 export default function ProfilePage() {
   const router = useRouter();

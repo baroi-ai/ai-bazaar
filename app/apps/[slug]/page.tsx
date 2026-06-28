@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import PocketBase from "pocketbase"; // Added missing import
 import { 
   Monitor, 
   HardDrive, 
@@ -18,7 +19,11 @@ import ImageCarousel from "./components/ImageCarousel";
 import PlatformWarningModal from "./components/PlatformWarningModal";
 import DaemonAppRunner from "./components/DaemonAppRunner";
 
-const PB_URL = "http://127.0.0.1:8090";
+// Unified URL configuration for both Client and Server fetches
+const POCKETBASE_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || "http://127.0.0.1:8090";
+
+// Initialize PocketBase
+export const pb = new PocketBase(POCKETBASE_URL);
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -36,7 +41,8 @@ function decodeHtml(html: string) {
 
 async function getAppDetails(slug: string) {
   try {
-    const res = await fetch(`${PB_URL}/api/collections/apps/records?filter=(slug='${slug}')&expand=categoies`, {
+    // Replaced hardcoded PB_URL with POCKETBASE_URL
+    const res = await fetch(`${POCKETBASE_URL}/api/collections/apps/records?filter=(slug='${slug}')&expand=categoies`, {
       cache: "no-store" 
     });
     const data = await res.json();
@@ -49,7 +55,8 @@ async function getAppDetails(slug: string) {
 
 const getPbImageUrl = (collectionId: string, recordId: string, filename: string) => {
   if (!filename) return "";
-  return `${PB_URL}/api/files/${collectionId}/${recordId}/${filename}`;
+  // Replaced hardcoded PB_URL with POCKETBASE_URL
+  return `${POCKETBASE_URL}/api/files/${collectionId}/${recordId}/${filename}`;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

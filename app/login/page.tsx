@@ -7,8 +7,10 @@ import PocketBase from 'pocketbase';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
-// Initialize PocketBase (Update this URL when deploying to production VPS!)
-const pb = new PocketBase("http://127.0.0.1:8090");
+const POCKETBASE_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || "http://127.0.0.1:8090";
+
+// Initialize PocketBase
+export const pb = new PocketBase(POCKETBASE_URL);
 
 export default function LoginPage() {
   const router = useRouter();

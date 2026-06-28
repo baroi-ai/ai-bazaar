@@ -6,8 +6,10 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import PocketBase from 'pocketbase';
 
+const POCKETBASE_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || "http://127.0.0.1:8090";
+
 // Initialize PocketBase
-const pb = new PocketBase("http://127.0.0.1:8090");
+export const pb = new PocketBase(POCKETBASE_URL);
 
 const COMPUTE_TYPES = ["All", "Local", "Cloud"];
 const PRICING_TYPES = ["All", "Free", "Paid"];

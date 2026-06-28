@@ -1,0 +1,14 @@
+*.gif -diff
+*.png -diff
+*.min.css -diff
+*.min.js -diff
+*.css.map -diff
+*.js.map -diff
+*.eot -diff
+*.svg -diff
+*.ttf -diff
+*.woff -diff
+*.woff2 -diff
+messages.mo -diff
+# SCM syntax highlighting & preventing 3-way merges
+pixi.lock merge=binary linguist-language=YAML linguist-generated=true -diff

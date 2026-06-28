@@ -35,7 +35,7 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-const pbBaseURL = "http://127.0.0.1:8090"
+const pbBaseURL = "https://api.aibazaars.store/"
 
 var pbClient = &http.Client{Timeout: 10 * time.Second} // Prevents UI freezes if DB is offline
 

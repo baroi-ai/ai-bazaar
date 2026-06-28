@@ -75,8 +75,8 @@ export default function MobileNav() {
           <span className="text-[10px] font-medium">Home</span>
         </Link>
 
-        {/* Billings */}
-        <Link href="/billing" onClick={() => setIsMenuOpen(false)} className={`flex-1 flex flex-col items-center justify-center gap-1 mt-1 ${getLinkClass('/billing')}`}>
+        {/* pricing */}
+        <Link href="/pricing" onClick={() => setIsMenuOpen(false)} className={`flex-1 flex flex-col items-center justify-center gap-1 mt-1 ${getLinkClass('/pricing')}`}>
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
             <rect x="2" y="5" width="20" height="14" rx="2.5" />
             <path d="M2 10h20" />
