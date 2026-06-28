@@ -87,6 +87,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={cn("scroll-smooth", "font-sans", geist.variable)}>
+      <head>
+        {/* Umami Analytics Tracking Script */}
+        <script 
+          defer 
+          src="https://cloud.umami.is/script.js" 
+          data-website-id="b775028b-e753-4f70-89b1-705ca339fd7e"
+        />
+      </head>
       <body className={`${inter.className} bg-[#0a0a0a] text-gray-100 antialiased overflow-x-hidden`}>
         {/* Main Page Content */}
         {children}
