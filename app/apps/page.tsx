@@ -207,7 +207,7 @@ export default function RepositoryPage() {
 
         <aside className={`${showMobileFilters ? "block" : "hidden"} md:block w-full md:w-64 shrink-0 space-y-8`}>
           <div>
-            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">Categories</h3>
+            <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">Categories</h2>
             <div className="flex flex-wrap gap-2">
               {categories.map(cat => (
                 <button

@@ -206,11 +206,13 @@ export default function Home() {
         {/* DYNAMIC AUTO-SCROLLING HERO CAROUSEL */}
         {carouselSlides.length > 0 && (
           <section className="mb-12 relative group">
-            <button onClick={scrollPrev} className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/50 hover:bg-black/80 backdrop-blur-md border border-white/10 rounded-full items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl">
+            {/* FIX: Added aria-label to previous button */}
+            <button aria-label="Previous slide" onClick={scrollPrev} className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/50 hover:bg-black/80 backdrop-blur-md border border-white/10 rounded-full items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl">
               <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
             </button>
 
-            <button onClick={scrollNext} className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/50 hover:bg-black/80 backdrop-blur-md border border-white/10 rounded-full items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl">
+            {/* FIX: Added aria-label to next button */}
+            <button aria-label="Next slide" onClick={scrollNext} className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/50 hover:bg-black/80 backdrop-blur-md border border-white/10 rounded-full items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl">
               <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
             </button>
 
@@ -269,7 +271,8 @@ export default function Home() {
             <div ref={topChartsRef} onScroll={handleTopChartsScroll} className="grid grid-rows-3 grid-flow-col md:grid-rows-none md:grid-flow-row md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 md:gap-x-6 gap-y-4 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none hide-scrollbar pb-2 md:pb-0 scroll-smooth">
               {topCharts.map((app, index) => (
                 <Link key={app.id} href={`/apps/${app.slug}`} className="flex items-center group cursor-pointer p-2 rounded-xl hover:bg-zinc-800/50 border border-transparent hover:border-zinc-800 transition w-[85vw] sm:w-[350px] md:w-auto shrink-0 snap-center md:snap-align-none">
-                  <span className="text-zinc-500 w-6 text-sm font-medium text-center">{index + 1}</span>
+                  {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
+                  <span className="text-zinc-400 w-6 text-sm font-medium text-center">{index + 1}</span>
                   
                   <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#0e0e0e] border border-zinc-800 flex items-center justify-center shadow-sm overflow-hidden ml-2 p-2.5 md:p-3 shrink-0">
 
@@ -279,10 +282,12 @@ export default function Home() {
                   <div className="ml-3 md:ml-4 flex-grow min-w-0">
                     <h3 className="text-sm md:text-base font-medium text-gray-100 leading-tight group-hover:text-sky-400 transition truncate">{app.name}</h3>
                     <p className="text-xs md:text-sm text-zinc-400 truncate capitalize">{app.category}</p>
-                    <span className="text-[10px] md:text-xs text-zinc-500 font-mono mt-1">
+                    {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
+                    <span className="text-[10px] md:text-xs text-zinc-400 font-mono mt-1">
                       {app.size?.toLowerCase() === "cloud" || app.type?.toLowerCase() === "cloud" ? (
                         <span className="flex items-center gap-0.5">
-                          <svg className="w-3 h-3 md:w-[14px] md:h-[14px] text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
+                          <svg className="w-3 h-3 md:w-[14px] md:h-[14px] text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                             <circle cx="12" cy="12" r="10" />
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-2.5-8.5h5m-5 4h5" />
                           </svg>
@@ -333,10 +338,12 @@ export default function Home() {
                     <img src={app.iconUrl} alt={`${app.name} logo`} className="w-full h-full object-contain drop-shadow-md relative z-0" />
                   </div>
                   <h3 className="text-xs sm:text-sm font-medium text-gray-100 line-clamp-2 leading-tight group-hover:text-sky-400 transition" title={app.name}>{app.name}</h3>
-                  <span className="text-[9px] md:text-xs text-zinc-500 font-mono mt-1">
+                  {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
+                  <span className="text-[9px] md:text-xs text-zinc-400 font-mono mt-1">
                     {app.size?.toLowerCase() === "cloud" || app.type?.toLowerCase() === "cloud" ? (
                       <span className="flex items-center gap-0.5">
-                        <svg className="w-3 h-3 md:w-[14px] md:h-[14px] text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
+                        <svg className="w-3 h-3 md:w-[14px] md:h-[14px] text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                           <circle cx="12" cy="12" r="10" />
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-2.5-8.5h5m-5 4h5" />
                         </svg>
@@ -374,10 +381,12 @@ export default function Home() {
                     <img src={app.iconUrl} alt={`${app.name} logo`} className="w-full h-full object-contain drop-shadow-md relative z-0" />
                   </div>
                   <h3 className="text-xs sm:text-sm font-medium text-gray-100 line-clamp-2 leading-tight group-hover:text-sky-400 transition" title={app.name}>{app.name}</h3>
-                  <span className="text-[9px] md:text-xs text-zinc-500 font-mono mt-1">
+                  {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
+                  <span className="text-[9px] md:text-xs text-zinc-400 font-mono mt-1">
                     {app.size?.toLowerCase() === "cloud" || app.type?.toLowerCase() === "cloud" ? (
                       <span className="flex items-center gap-0.5">
-                        <svg className="w-3 h-3 md:w-[14px] md:h-[14px] text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
+                        <svg className="w-3 h-3 md:w-[14px] md:h-[14px] text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                           <circle cx="12" cy="12" r="10" />
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-2.5-8.5h5m-5 4h5" />
                         </svg>
@@ -415,10 +424,12 @@ export default function Home() {
                     <img src={app.iconUrl} alt={`${app.name} logo`} className="w-full h-full object-contain drop-shadow-md relative z-0" />
                   </div>
                   <h3 className="text-xs sm:text-sm font-medium text-gray-100 line-clamp-2 leading-tight group-hover:text-sky-400 transition" title={app.name}>{app.name}</h3>
-                  <span className="text-[9px] md:text-xs text-zinc-500 font-mono mt-1">
+                  {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
+                  <span className="text-[9px] md:text-xs text-zinc-400 font-mono mt-1">
                     {app.size?.toLowerCase() === "cloud" || app.type?.toLowerCase() === "cloud" ? (
                       <span className="flex items-center gap-0.5">
-                        <svg className="w-3 h-3 md:w-[14px] md:h-[14px] text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
+                        <svg className="w-3 h-3 md:w-[14px] md:h-[14px] text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                           <circle cx="12" cy="12" r="10" />
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-2.5-8.5h5m-5 4h5" />
                         </svg>
