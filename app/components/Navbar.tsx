@@ -75,7 +75,7 @@ export default function Navbar() {
           className="flex items-center space-x-3 cursor-pointer group"
         >
           <img
-            src="/logo.png"
+            src="/logo.webp"
             alt="AI Bazaar Logo"
             className="w-10 h-10 object-contain group-hover:scale-105 transition"
           />

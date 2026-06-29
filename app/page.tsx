@@ -11,6 +11,7 @@ const POCKETBASE_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || "http://127.0.0
 // Initialize PocketBase
 export const pb = new PocketBase(POCKETBASE_URL);
 
+
 // Helper function to assign sleek, dark-mode friendly colors to different badge types
 const getBadgeStyles = (badge: string) => {
   const b = badge?.toLowerCase() || "";

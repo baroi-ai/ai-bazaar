@@ -124,7 +124,7 @@ export default function LoginPage() {
         
         <div className="mb-10">
           <Link href="/" className="cursor-pointer">
-            <img src="/logo.png" alt="AI Bazaar" className="w-14 h-14 object-contain" onError={(e) => { e.currentTarget.src = "https://placehold.co/100" }} />
+            <img src="/logo.webp" alt="AI Bazaar" className="w-14 h-14 object-contain" onError={(e) => { e.currentTarget.src = "https://placehold.co/100" }} />
           </Link>
         </div>
 
