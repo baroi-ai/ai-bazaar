@@ -34,7 +34,6 @@ Thumbs.db
 
 
 # Ignore heavy runtime binaries and SDKs
-ai-bazaar-daemon-macos/bin/**/pixi
-ai-bazaar-daemon-macos/*.tar.xz
+ai-bazaar-daemon-linux/core/apps/*
 # Sentry Config File
 .env.sentry-build-plugin
