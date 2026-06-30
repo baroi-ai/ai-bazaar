@@ -1,1 +1,0 @@
-{"app_name":"n8n","app_icon":"45487711_41739bkih3.png","app_id":"pswhorle8f0cu0d","start_command":["python","-c","import os, subprocess; os.environ['N8N_PORT'] = os.environ.get('PORT', '8899'); subprocess.run(['n8n'])"],"port":"8899"}

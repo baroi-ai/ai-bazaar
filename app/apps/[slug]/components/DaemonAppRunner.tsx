@@ -15,13 +15,10 @@ import {
 type DaemonAppRunnerProps = {
   appName: string;
   appSlug: string;
-  appIcon?: string; // Icon image filename string from PocketBase
-  appId?: string;   // ID for icon asset building path
+  appIcon?: string;
+  appId?: string;   
   downloadLinks: {
-    github_url: string;
-    environments: string[];
-    install_commands: string[][];
-    start_command: string[];
+    image_link: string; // <-- Updated to match PocketBase and Go Daemon
   };
 };
 
@@ -55,12 +52,13 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
       setIsMobile(true);
     }
 
-    if (downloadLinks?.github_url) {
+    // <-- Updated to check image_link
+    if (downloadLinks?.image_link) {
       try {
         fetch("http://127.0.0.1:4500/check", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ github_url: downloadLinks.github_url, slug: appSlug })
+          body: JSON.stringify({ image_link: downloadLinks.image_link, slug: appSlug })
         })
         .then(res => res.json())
         .then(data => {
@@ -92,8 +90,9 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
       return;
     }
 
-    if (!downloadLinks?.github_url) {
-      alert("Error: GitHub config details missing from PocketBase.");
+    // <-- Updated error check
+    if (!downloadLinks?.image_link) {
+      alert("Error: Docker Image config details missing from PocketBase.");
       return;
     }
 
@@ -101,7 +100,7 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
       const res = await fetch("http://127.0.0.1:4500/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ github_url: downloadLinks.github_url, slug: appSlug }),
+        body: JSON.stringify({ image_link: downloadLinks.image_link, slug: appSlug }),
         signal: AbortSignal.timeout(1500)
       }).catch(() => { throw new Error("Offline"); });
       
@@ -126,17 +125,15 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
     wsRef.current = ws;
 
     ws.onopen = () => {
-      appendLog(`SYSTEM: Connected! Transmitting custom Pixi deployment blueprint...`);
+      appendLog(`SYSTEM: Connected! Requesting Docker Image pull...`);
+      // <-- Updated payload to match Go Struct
       ws.send(JSON.stringify({ 
         action: 'RUN', 
         slug: appSlug,
         app_name: appName,
         app_icon: appIcon,
         app_id: appId,
-        github_url: downloadLinks.github_url,
-        environments: downloadLinks.environments,
-        install_commands: downloadLinks.install_commands,
-        start_command: downloadLinks.start_command,
+        image_link: downloadLinks.image_link, 
         port: '8899'
       }));
     };
@@ -144,6 +141,7 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
     ws.onmessage = (event) => {
       const msg = event.data;
 
+      // Handle Docker progress bars if needed, or standard logs
       if (msg.startsWith("PROGRESS|")) {
         const parts = msg.split("|");
         if (parts.length >= 3) {
@@ -164,9 +162,10 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
 
       appendLog(msg);
 
-      if (msg.includes("🚀 ONLINE:") || msg.includes("Booting up AI Engine")) {
+      if (msg.includes("🚀 ONLINE:")) {
         setStatus("running");
         setIsInstalled(true); 
+        // Extract port dynamically if possible, or fallback to 8899
         setAppUrl("http://127.0.0.1:8899");
         setProgressLogs({});
       }
@@ -198,7 +197,7 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
   const handleStopClick = async () => {
     setStatus("stopping");
     setProgressLogs({});
-    appendLog(`SYSTEM: Sending termination signal...`);
+    appendLog(`SYSTEM: Sending termination signal to Docker container...`);
 
     try {
       await fetch("http://127.0.0.1:4500/stop", { 
@@ -350,7 +349,7 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
                     if (log.includes("ERROR") || log.includes("❌")) textClass = "text-red-400 font-bold";
                     if (log.includes("✅") || log.includes("🚀")) textClass = "text-emerald-400 font-semibold";
                     if (log.includes("SYSTEM:") || log.includes("📥")) textClass = "text-amber-400/90";
-                    if (log.includes("⚙️")) textClass = "text-blue-300";
+                    if (log.includes("⚙️") || log.includes("🐳")) textClass = "text-blue-300";
                     return <div key={i} className={`pl-2 ${textClass}`}>{log}</div>;
                   })}
 
