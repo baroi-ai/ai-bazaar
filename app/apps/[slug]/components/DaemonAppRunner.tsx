@@ -166,7 +166,12 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
         setStatus("running");
         setIsInstalled(true); 
         // Extract port dynamically if possible, or fallback to 8899
-        setAppUrl("http://127.0.0.1:8899");
+        let matchedUrl = "http://127.0.0.1:8899";
+        const urlMatch = msg.match(/https?:\/\/[a-zA-Z0-9.-]+:\d+/);
+        if (urlMatch) {
+          matchedUrl = urlMatch[0];
+        }
+        setAppUrl(matchedUrl);
         setProgressLogs({});
       }
 

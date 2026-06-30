@@ -231,7 +231,7 @@ func stopDockerContainer(slug string) {
 		return
 	}
 	containerName := "aibazaar-" + slug
-	writeLog("🛑 [STOP]: Stopping container %s...\n", containerName)
+	writeLog("🛑 [STOP]: Stopping app %s...\n", slug)
 
 	processMutex.Lock()
 	stoppingApps[slug] = true
@@ -246,7 +246,7 @@ func stopDockerContainer(slug string) {
 	// SDK Call to stop
 	err := dockerCli.ContainerStop(ctx, containerName, container.StopOptions{Timeout: &timeout})
 	if err != nil {
-		writeLog("⚠️ [STOP]: Container %s might already be stopped.\n", containerName)
+		writeLog("⚠️ [STOP]: App %s might already be stopped.\n", slug)
 	}
 
 	// Also prune it to be clean
@@ -500,8 +500,8 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	// ==========================================
 	// RUN DOCKER CONTAINER VIA SDK
 	// ==========================================
-	writeLog("⚡ Launching Docker container...\n")
-	writeWS(conn, "⚡ SYSTEM: Launching Docker container...")
+	writeLog("⚡ Launching App...\n")
+	writeWS(conn, "⚡ SYSTEM: Launching App...")
 
 	dockerCli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
 
@@ -518,14 +518,14 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	}, nil, nil, containerName)
 
 	if createErr != nil {
-		writeLog("❌ ERROR: Failed to create Docker container: %v\n", createErr)
-		writeWS(conn, "❌ ERROR: Failed to create Docker container.")
+		writeLog("❌ ERROR: Failed to create App: %v\n", createErr)
+		writeWS(conn, "❌ ERROR: Failed to create App.")
 		return
 	}
 
 	if startErr := dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); startErr != nil {
-		writeLog("❌ ERROR: Failed to start Docker container: %v\n", startErr)
-		writeWS(conn, "❌ ERROR: Failed to start Docker container.")
+		writeLog("❌ ERROR: Failed to start App: %v\n", startErr)
+		writeWS(conn, "❌ ERROR: Failed to start App.")
 		return
 	}
 
@@ -559,11 +559,11 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	select {
 	case err := <-errCh:
 		if err != nil {
-			writeLog("⚠️ SYSTEM: Container exited with error: %v\n", err)
+			writeLog("⚠️ SYSTEM: App exited with error: %v\n", err)
 		}
 	case <-statusCh:
-		writeLog("💤 SYSTEM: Docker container stopped cleanly.\n")
-		writeWS(conn, "💤 SYSTEM: Docker container stopped cleanly.")
+		writeLog("💤 SYSTEM: App stopped cleanly.\n")
+		writeWS(conn, "💤 SYSTEM: App stopped cleanly.")
 	}
 
 	processMutex.Lock()
@@ -631,11 +631,11 @@ func startAppLocally(rawSlug string) error {
 	}, nil, nil, containerName)
 
 	if createErr != nil {
-		return fmt.Errorf("failed to create container: %v", createErr)
+		return fmt.Errorf("failed to create app: %v", createErr)
 	}
 
 	if startErr := dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); startErr != nil {
-		return fmt.Errorf("failed to start container: %v", startErr)
+		return fmt.Errorf("failed to start app: %v", startErr)
 	}
 
 	processMutex.Lock()
@@ -969,14 +969,22 @@ func fetchIcon(appId, iconName string) fyne.Resource {
 	return fyne.NewStaticResource(iconName, b)
 }
 
-func startServer() {
+func startServer() bool {
+	ln, err := net.Listen("tcp", "127.0.0.1:4500")
+	if err != nil {
+		return false
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/check", handleCheck)
 	mux.HandleFunc("/stop", handleStop)
 	mux.HandleFunc("/delete", handleDelete)
 	mux.HandleFunc("/ws", handleWebSocket)
-	writeLog("📡 AI BAZAAR DOCKER ENGINE ONLINE (Port: 4500)\n")
-	go http.ListenAndServe("127.0.0.1:4500", mux)
+	writeLog("📡 AI BAZAAR ENGINE ONLINE (Port: 4500)\n")
+
+	s := &http.Server{Handler: mux}
+	go s.Serve(ln)
+	return true
 }
 
 func main() {
@@ -1047,16 +1055,16 @@ func main() {
 	})
 
 	logBinding = binding.NewString()
-	logBinding.Set("Welcome to the AI Bazaar Docker Engine.\nReady to connect.\n")
+	logBinding.Set("Welcome to the AI Bazaar Engine.\nReady to connect.\n")
 
 	// ==========================================
-	// 1. TERMINAL TAB
+	// 1. LOGS TAB
 	// ==========================================
 	terminalUI := newReadOnlyEntry()
 	terminalUI.Bind(logBinding)
 	scrollContainer := fyneContainer.NewScroll(terminalUI)
 
-	btnClear := widget.NewButton("🧹 Clear Terminal", func() {
+	btnClear := widget.NewButton("🧹 Clear Logs", func() {
 		logMutex.Lock()
 		permanentLog = ""
 		logMutex.Unlock()
@@ -1069,7 +1077,7 @@ func main() {
 		fyneContainer.NewHBox(layout.NewSpacer(), btnClear),
 	)
 	terminalLayout := fyneContainer.NewBorder(topBar, nil, nil, nil, scrollContainer)
-	tabTerminal := fyneContainer.NewTabItem("🖥️ Terminal", fyneContainer.NewPadded(terminalLayout))
+	tabTerminal := fyneContainer.NewTabItem("📋 Logs", fyneContainer.NewPadded(terminalLayout))
 
 	// ==========================================
 	// 2. EXPLORE TAB
@@ -1316,19 +1324,19 @@ func main() {
 				statusColor := color.RGBA{150, 150, 150, 255}
 
 				if isInstalling {
-					statusText = "Pulling Docker Image... (Check Terminal)"
+					statusText = "Downloading app... (Check Logs)"
 					statusColor = color.RGBA{56, 189, 248, 255}
 				} else if isStarting {
-					statusText = "Starting container..."
+					statusText = "Starting app..."
 					statusColor = color.RGBA{56, 189, 248, 255}
 				} else if isStopping {
-					statusText = "Stopping container..."
+					statusText = "Stopping app..."
 					statusColor = color.RGBA{239, 68, 68, 255}
 				} else if isUninstalling {
 					statusText = "Uninstalling app..."
 					statusColor = color.RGBA{239, 68, 68, 255}
 				} else if isRunning {
-					statusText = fmt.Sprintf("Running in Docker (Port %s)", targetPort)
+					statusText = fmt.Sprintf("Running (Port %s)", targetPort)
 					statusColor = color.RGBA{16, 185, 129, 255}
 				}
 
@@ -1407,7 +1415,7 @@ func main() {
 					btnBox = fyneContainer.NewHBox(actionBtn, progressContainer)
 				} else {
 					delBtn := widget.NewButtonWithIcon("Uninstall", theme.DeleteIcon(), func() {
-						dialog.ShowConfirm("Uninstall App", "Are you sure you want to delete "+displayName+"?\nThis will remove the Docker image and clear storage space.", func(ok bool) {
+						dialog.ShowConfirm("Uninstall App", "Are you sure you want to delete "+displayName+"?\nThis will remove the app files and clear storage space.", func(ok bool) {
 							if ok {
 								// Run in Goroutine to prevent UI lock
 								go uninstallApp(appSlug)
@@ -1462,7 +1470,7 @@ func main() {
 	lblTitle.Alignment = fyne.TextAlignCenter
 
 	lblDesc := widget.NewLabelWithStyle(
-		"The lightweight bridge daemon for securely executing AI models.\nPowered by Docker Container Runtimes.\nListening on Port 4500.",
+		"The lightweight bridge for securely executing AI models.\nPowered by AI Bazaar Engine.\nListening on Port 4500.",
 		fyne.TextAlignCenter,
 		fyne.TextStyle{},
 	)
@@ -1509,7 +1517,13 @@ func main() {
 	// Pre-flight check on initial app startup
 	fyne.Do(func() {
 		ensureDockerReady(mainWindow, func() {
-			startServer()
+			if !startServer() {
+				d := dialog.NewInformation("Port Conflict", "Port 4500 is already in use.\n\nPlease close any other instances of AI Bazaar and try again.", mainWindow)
+				d.SetOnClosed(func() {
+					a.Quit()
+				})
+				d.Show()
+			}
 		}, nil)
 	})
 
