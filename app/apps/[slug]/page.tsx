@@ -158,6 +158,8 @@ export default async function AppListingPage({ params }: Props) {
                 <DaemonAppRunner 
                   appName={appData.Name} 
                   appSlug={appData.slug} 
+                  appIcon={appData.icon}
+                  appId={appData.id}
                   downloadLinks={downloadLinks} 
                 />
               )}
