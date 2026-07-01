@@ -19,6 +19,9 @@ type DaemonAppRunnerProps = {
   appId?: string;   
   downloadLinks: {
     image_link: string; // <-- Updated to match PocketBase and Go Daemon
+    internal_port?: string | number;
+    is_gpu?: boolean;
+    is_fallback?: boolean;
   };
 };
 
@@ -134,7 +137,10 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
         app_icon: appIcon,
         app_id: appId,
         image_link: downloadLinks.image_link, 
-        port: '8899'
+        port: '8899',
+        internal_port: downloadLinks.internal_port ? String(downloadLinks.internal_port) : undefined,
+        is_gpu: downloadLinks.is_gpu ?? false,
+        is_fallback: downloadLinks.is_fallback ?? false
       }));
     };
 
@@ -222,6 +228,21 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
   return (
     <>
       <div className="w-full flex flex-col gap-3 mt-2">
+        
+        {/* --- ADDED CONNECTION INDICATOR HERE --- */}
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <span className="relative flex h-2.5 w-2.5">
+            {!isDaemonOffline && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            )}
+            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isDaemonOffline ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
+          </span>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">
+            {isDaemonOffline ? 'Engine Offline' : 'Engine Connected'}
+          </span>
+        </div>
+        {/* --------------------------------------- */}
+
         {status === "idle" && (
           <div className="flex gap-2 w-full">
             <button 
@@ -291,7 +312,7 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
                 
                 <div className="mt-5 flex flex-col gap-2">
                   <a 
-                    href="https://github.com/YOUR_ORG/YOUR_REPO/releases" 
+                    href="/download" 
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-black font-bold text-sm transition-all"

@@ -1,1 +1,1 @@
-{"app_name":"Reclip","app_icon":"screenshot_from_2026_06_08_23_39_47_ek8fogvo3z_converted_m24b1a4zxr.webp","app_id":"uq256bzmp3t9d1x","image_link":"ghcr.io/baroi-ai/reclip-ai-bazaar:main","port":"8899"}
+{"app_name":"Reclip","app_icon":"screenshot_from_2026_06_08_23_39_47_ek8fogvo3z_converted_m24b1a4zxr.webp","app_id":"uq256bzmp3t9d1x","image_link":"ghcr.io/baroi-ai/reclip-ai-bazaar:main","port":"8899","internal_port":"","is_gpu":false,"is_fallback":false}

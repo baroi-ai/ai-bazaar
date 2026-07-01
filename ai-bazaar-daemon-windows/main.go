@@ -1,8 +1,7 @@
 package main
 
 import (
-	"archive/zip"
-	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"image/color"
@@ -14,15 +13,23 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	// Docker SDK imports
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	dockerContainer "github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/docker/go-connections/nat"
+
+	// Fyne imports (Aliased container to fyneContainer to avoid conflicts)
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/container"
+	fyneContainer "fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
@@ -37,32 +44,29 @@ var upgrader = websocket.Upgrader{
 
 const pbBaseURL = "https://api.aibazaars.store/"
 
-var pbClient = &http.Client{Timeout: 10 * time.Second} // Prevents UI freezes if DB is offline
+var pbClient = &http.Client{Timeout: 10 * time.Second}
 
 type ClientRequest struct {
-	Action          string     `json:"action"`
-	Slug            string     `json:"slug"`
-	AppName         string     `json:"app_name"`
-	AppIcon         string     `json:"app_icon"`
-	AppId           string     `json:"app_id"`
-	GithubURL       string     `json:"github_url"`
-	Environments    []string   `json:"environments"`
-	InstallCommands [][]string `json:"install_commands"`
-	StartCommand    []string   `json:"start_command"`
-	Port            string     `json:"port"`
+	Action    string `json:"action"`
+	Slug      string `json:"slug"`
+	AppName   string `json:"app_name"`
+	AppIcon   string `json:"app_icon"`
+	AppId     string `json:"app_id"`
+	ImageLink string `json:"image_link"`
+	Port      string `json:"port"`
 }
 
 type BazaarConfig struct {
-	AppName      string   `json:"app_name"`
-	AppIcon      string   `json:"app_icon"`
-	AppId        string   `json:"app_id"`
-	StartCommand []string `json:"start_command"`
-	Port         string   `json:"port"`
+	AppName   string `json:"app_name"`
+	AppIcon   string `json:"app_icon"`
+	AppId     string `json:"app_id"`
+	ImageLink string `json:"image_link"`
+	Port      string `json:"port"`
 }
 
 type EndpointRequest struct {
 	Slug      string `json:"slug"`
-	GithubURL string `json:"github_url"`
+	ImageLink string `json:"image_link"`
 }
 
 type PBResponse struct {
@@ -80,19 +84,26 @@ type PBApp struct {
 	Size             string `json:"size"`
 }
 
-var activeProcesses = make(map[string]*exec.Cmd)
+var activeContainers = make(map[string]bool) // slug -> is running
 var installingApps = make(map[string]bool)
+var startingApps = make(map[string]bool)
+var stoppingApps = make(map[string]bool)
+var uninstallingApps = make(map[string]bool)
 var processMutex sync.Mutex
-var wsMutex sync.Mutex // SECURITY: Prevents concurrent WebSocket panics
+var wsMutex sync.Mutex
+var mainWindow fyne.Window
 
-// UI Controller Hooks for Cross-Tab Communication
+// Global Docker Client
+var dockerCli *client.Client
+
+// UI Controller Hooks
 var refreshInstalledApps func()
 var refreshExploreApps func()
 var switchToInstalledTab func()
 var exploreLoaded = false
 
 // ---------------------------------------------------------
-// RECONFIGURED UTILITY AND DIRECTORY HANDLERS
+// UTILITY AND DIRECTORY HANDLERS
 // ---------------------------------------------------------
 
 func sanitizeSlug(slug string) string {
@@ -110,14 +121,6 @@ func getBaseDir() string {
 		baseDir, _ = os.Getwd()
 	}
 	return baseDir
-}
-
-func getPixiPath() string {
-	pixiExe := "pixi"
-	if runtime.GOOS == "windows" {
-		pixiExe = "pixi.exe"
-	}
-	return filepath.Join(getBaseDir(), "bin", pixiExe)
 }
 
 func getAppFolderPath(rawSlug string) string {
@@ -140,28 +143,128 @@ func getAvailablePort(desiredPort string) string {
 	return desiredPort
 }
 
-func killUnixTree(pid int) {
-	out, err := exec.Command("pgrep", "-P", fmt.Sprintf("%d", pid)).Output()
-	if err == nil {
-		for _, childStr := range strings.Fields(string(out)) {
-			if childPid, err := strconv.Atoi(childStr); err == nil {
-				killUnixTree(childPid)
+// ---------------------------------------------------------
+// DOCKER LIFECYCLE MANAGEMENT (SDK)
+// ---------------------------------------------------------
+
+func ensureDockerReady(w fyne.Window, onReady func(), onFailure func()) {
+	go func() {
+		ctx := context.Background()
+
+		// 1. Initialize SDK Client (Default standard attempt)
+		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+		if err == nil {
+			_, err = cli.Ping(ctx) // Test connection
+		}
+
+		// 1.5. Fallback for Docker Desktop on Linux!
+		if err != nil && runtime.GOOS == "linux" {
+			homeDir, _ := os.UserHomeDir()
+			desktopSock := "unix://" + filepath.Join(homeDir, ".docker", "desktop", "docker.sock")
+
+			fallbackCli, fallbackErr := client.NewClientWithOpts(
+				client.WithHost(desktopSock),
+				client.WithAPIVersionNegotiation(),
+			)
+			if fallbackErr == nil {
+				if _, pingErr := fallbackCli.Ping(ctx); pingErr == nil {
+					// Success! We found the hidden Docker Desktop socket
+					cli = fallbackCli
+					err = nil
+				}
 			}
 		}
-	}
-	exec.Command("kill", "-9", fmt.Sprintf("%d", pid)).Run()
+
+		// 2. If daemon is completely unreachable
+		if err != nil {
+			_, pathErr := exec.LookPath("docker")
+			if pathErr != nil {
+				fyne.Do(func() {
+					dialog.ShowCustomConfirm("Docker Required", "Install Docker", "Quit App",
+						widget.NewLabel("Docker Desktop is not installed.\nAI Bazaar requires Docker Desktop to securely run AI models."),
+						func(install bool) {
+							if install {
+								u, _ := url.Parse("https://www.docker.com/products/docker-desktop/")
+								fyne.CurrentApp().OpenURL(u)
+							}
+							if onFailure != nil {
+								onFailure()
+							}
+							fyne.CurrentApp().Quit()
+						}, w)
+				})
+				return
+			}
+
+			writeLog("⚙️ Docker daemon offline. Waiting for user to start Docker Desktop...\n")
+
+			fyne.Do(func() {
+				dialog.ShowCustomConfirm("Docker Engine Offline", "Retry Connection", "Quit App",
+					widget.NewLabel("Docker Desktop is currently not running.\n\n1. Please open Docker Desktop manually.\n2. Wait for the engine to fully load.\n3. Click 'Retry Connection' below."),
+					func(retry bool) {
+						if retry {
+							ensureDockerReady(w, onReady, onFailure)
+						} else {
+							if onFailure != nil {
+								onFailure()
+							}
+							fyne.CurrentApp().Quit()
+						}
+					}, w)
+			})
+			return
+		}
+
+		// 3. Success! Docker is running.
+		processMutex.Lock()
+		dockerCli = cli // Save global reference
+		processMutex.Unlock()
+		writeLog("✅ Docker Engine is ready and connected.\n")
+		if onReady != nil {
+			onReady()
+		}
+	}()
 }
 
-func stopProcessTree(cmd *exec.Cmd) {
-	if cmd == nil || cmd.Process == nil {
+func stopDockerContainer(slug string) {
+	if dockerCli == nil {
 		return
 	}
-	if runtime.GOOS == "windows" {
-		exec.Command("taskkill", "/T", "/F", "/PID", fmt.Sprintf("%d", cmd.Process.Pid)).Run()
-	} else {
-		killUnixTree(cmd.Process.Pid)
+	containerName := "aibazaar-" + slug
+	writeLog("🛑 [STOP]: Stopping app %s...\n", slug)
+
+	processMutex.Lock()
+	stoppingApps[slug] = true
+	if refreshInstalledApps != nil {
+		fyne.Do(func() { refreshInstalledApps() })
+	}
+	processMutex.Unlock()
+
+	ctx := context.Background()
+	timeout := 10 // Give it 10 seconds to shut down gracefully
+
+	// SDK Call to stop
+	err := dockerCli.ContainerStop(ctx, containerName, container.StopOptions{Timeout: &timeout})
+	if err != nil {
+		writeLog("⚠️ [STOP]: App %s might already be stopped.\n", slug)
+	}
+
+	// Also prune it to be clean
+	dockerCli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
+
+	processMutex.Lock()
+	delete(activeContainers, slug)
+	delete(stoppingApps, slug)
+	processMutex.Unlock()
+
+	if refreshInstalledApps != nil {
+		fyne.Do(func() { refreshInstalledApps() })
 	}
 }
+
+// ---------------------------------------------------------
+// LOGGING & STREAMING
+// ---------------------------------------------------------
 
 var permanentLog string
 var logMutex sync.Mutex
@@ -182,26 +285,56 @@ func writeLog(format string, a ...interface{}) {
 	}
 }
 
-type ProgressWriter struct {
-	TotalDownloaded int64
-	LastReported    int64
-	Conn            *websocket.Conn
-}
+func updateDockerPullLog(id string, status string, progressInfo string) {
+	logMutex.Lock()
+	defer logMutex.Unlock()
 
-func (pw *ProgressWriter) Write(p []byte) (int, error) {
-	n := len(p)
-	pw.TotalDownloaded += int64(n)
-	if pw.TotalDownloaded-pw.LastReported >= 1048576 {
-		pw.LastReported = pw.TotalDownloaded
-		if pw.Conn != nil {
-			mb := float64(pw.TotalDownloaded) / 1024.0 / 1024.0
-			msg := fmt.Sprintf("PROGRESS|download|📥 Downloading Repository Payload: %.1f MB", mb)
-			wsMutex.Lock()
-			pw.Conn.WriteMessage(websocket.TextMessage, []byte(msg))
-			wsMutex.Unlock()
+	newLine := ""
+	if id != "" {
+		newLine = fmt.Sprintf("🐳 [Docker Pull]: %s: %s%s\n", id, status, progressInfo)
+	} else {
+		newLine = fmt.Sprintf("🐳 [Docker Pull]: %s%s\n", status, progressInfo)
+	}
+
+	// Print to stdout
+	fmt.Print(newLine)
+
+	// If no ID is provided, just append to permanentLog
+	if id == "" {
+		permanentLog += newLine
+		if len(permanentLog) > 50000 {
+			permanentLog = permanentLog[len(permanentLog)-50000:]
+		}
+		if logBinding != nil {
+			logBinding.Set(permanentLog)
+		}
+		return
+	}
+
+	prefix := fmt.Sprintf("🐳 [Docker Pull]: %s:", id)
+	lines := strings.Split(permanentLog, "\n")
+	found := false
+
+	for i := len(lines) - 1; i >= 0; i-- {
+		if strings.HasPrefix(lines[i], prefix) {
+			lines[i] = strings.TrimSuffix(newLine, "\n") // Replace the line
+			found = true
+			break
 		}
 	}
-	return n, nil
+
+	if found {
+		permanentLog = strings.Join(lines, "\n")
+	} else {
+		permanentLog += newLine
+	}
+
+	if len(permanentLog) > 50000 {
+		permanentLog = permanentLog[len(permanentLog)-50000:]
+	}
+	if logBinding != nil {
+		logBinding.Set(permanentLog)
+	}
 }
 
 func writeWS(conn *websocket.Conn, msg string) {
@@ -212,52 +345,36 @@ func writeWS(conn *websocket.Conn, msg string) {
 	}
 }
 
-func runAndStream(cmd *exec.Cmd, prefix string, conn *websocket.Conn) error {
-	stdoutPipe, _ := cmd.StdoutPipe()
-	stderrPipe, _ := cmd.StderrPipe()
+// UILogWriter redirects standard output streams to our UI log system
+type UILogWriter struct {
+	Prefix string
+	Conn   *websocket.Conn
+}
 
-	if err := cmd.Start(); err != nil {
-		return err
+func (w *UILogWriter) Write(p []byte) (n int, err error) {
+	lines := strings.Split(string(p), "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if len(trimmed) > 0 {
+			writeLog("%s %s\n", w.Prefix, trimmed)
+			writeWS(w.Conn, w.Prefix+" "+trimmed)
+		}
 	}
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		scanner := bufio.NewScanner(stdoutPipe)
-		for scanner.Scan() {
-			msg := prefix + " " + scanner.Text()
-			writeLog(msg + "\n")
-			writeWS(conn, msg)
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-		scanner := bufio.NewScanner(stderrPipe)
-		for scanner.Scan() {
-			msg := prefix + " " + scanner.Text()
-			writeLog(msg + "\n")
-			writeWS(conn, msg)
-		}
-	}()
-
-	wg.Wait()
-	return cmd.Wait()
+	return len(p), nil
 }
 
 // ---------------------------------------------------------
-// CORE INSTALLATION & EXECUTION ENGINE
+// CORE INSTALLATION & EXECUTION ENGINE (SDK INTEGRATED)
 // ---------------------------------------------------------
 
 func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	safeSlug := sanitizeSlug(req.Slug)
 	appFolder := getAppFolderPath(safeSlug)
+	containerName := "aibazaar-" + safeSlug
+	ctx := context.Background()
 
 	processMutex.Lock()
-	_, isRunning := activeProcesses[safeSlug]
-
+	isRunning := activeContainers[safeSlug]
 	installingApps[safeSlug] = true
 	if refreshInstalledApps != nil {
 		fyne.Do(func() { refreshInstalledApps() })
@@ -285,26 +402,24 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 		return
 	}
 
-	pixiExe := getPixiPath()
 	targetPort := req.Port
 	if targetPort == "" {
 		targetPort = "8899"
 	}
-
 	targetPort = getAvailablePort(targetPort)
 
 	configData := BazaarConfig{
-		AppName:      req.AppName,
-		AppIcon:      req.AppIcon,
-		AppId:        req.AppId,
-		StartCommand: req.StartCommand,
-		Port:         targetPort,
+		AppName:   req.AppName,
+		AppIcon:   req.AppIcon,
+		AppId:     req.AppId,
+		ImageLink: req.ImageLink,
+		Port:      targetPort,
 	}
 	configBytes, _ := json.Marshal(configData)
 	os.MkdirAll(appFolder, 0755)
 	os.WriteFile(filepath.Join(appFolder, ".bazaar"), configBytes, 0644)
 
-	// CACHE ICON LOCALLY
+	// Cache App Icon
 	if req.AppIcon != "" && req.AppId != "" {
 		iconURL := fmt.Sprintf("%s/api/files/apps/%s/%s?thumb=100x100", pbBaseURL, req.AppId, req.AppIcon)
 		resp, err := pbClient.Get(iconURL)
@@ -316,174 +431,143 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 		}
 	}
 
-	if _, err := os.Stat(filepath.Join(appFolder, "pixi.toml")); os.IsNotExist(err) {
-		writeLog("📥 Initiating GitHub Repository Payload Download...\n")
-		writeWS(conn, "📥 SYSTEM: Initiating GitHub Repository Payload Download...")
+	// ==========================================
+	// PULL DOCKER IMAGE VIA SDK (With Progress)
+	// ==========================================
+	writeLog("📥 Initiating Docker Image Pull for %s...\n", req.ImageLink)
+	writeWS(conn, "📥 SYSTEM: Pulling Docker Image... (This might take a few minutes)")
 
-		if req.GithubURL == "" {
-			writeLog("❌ ERROR: GitHub Repository URL is missing. Cannot install.\n")
-			writeWS(conn, "❌ ERROR: Repository payload download aborted.")
-			processMutex.Lock()
-			delete(installingApps, safeSlug)
-			if refreshInstalledApps != nil {
-				fyne.Do(func() { refreshInstalledApps() })
-			}
-			processMutex.Unlock()
-			return
+	reader, pullErr := dockerCli.ImagePull(ctx, req.ImageLink, types.ImagePullOptions{})
+	if pullErr != nil {
+		writeLog("❌ ERROR: Failed to pull image: %v\n", pullErr)
+		processMutex.Lock()
+		delete(installingApps, safeSlug)
+		processMutex.Unlock()
+		if refreshInstalledApps != nil {
+			fyne.Do(func() { refreshInstalledApps() })
+		}
+		return
+	}
+
+	// Decode JSON progress stream
+	dec := json.NewDecoder(reader)
+	type dockerPullMsg struct {
+		Status         string `json:"status"`
+		Id             string `json:"id"`
+		ProgressDetail struct {
+			Current int64 `json:"current"`
+			Total   int64 `json:"total"`
+		} `json:"progressDetail"`
+	}
+
+	var lastUpdate time.Time
+	for {
+		var msg dockerPullMsg
+		if err := dec.Decode(&msg); err == io.EOF {
+			break
+		} else if err != nil {
+			continue
 		}
 
-		zipURL := strings.TrimSuffix(req.GithubURL, "/") + "/archive/HEAD.zip"
-		resp, err := http.Get(zipURL) // GitHub downloads can be large, omitting rigid timeout
-		if err != nil || resp.StatusCode != 200 {
-			writeLog("❌ ERROR: Repository payload download aborted.\n")
-			writeWS(conn, "❌ ERROR: Repository payload download aborted.")
-
-			processMutex.Lock()
-			delete(installingApps, safeSlug)
-			if refreshInstalledApps != nil {
-				fyne.Do(func() { refreshInstalledApps() })
+		// Throttle UI updates to prevent freezing (twice a second)
+		if time.Since(lastUpdate) > 500*time.Millisecond || msg.Status == "Download complete" || msg.Status == "Pull complete" {
+			progressStr := ""
+			if msg.ProgressDetail.Total > 0 {
+				mbCurrent := float64(msg.ProgressDetail.Current) / 1024 / 1024
+				mbTotal := float64(msg.ProgressDetail.Total) / 1024 / 1024
+				progressStr = fmt.Sprintf(" (%.1f MB / %.1f MB)", mbCurrent, mbTotal)
 			}
-			processMutex.Unlock()
-			return
-		}
+			updateDockerPullLog(msg.Id, msg.Status, progressStr)
 
-		tempZip := appFolder + "_temp.zip"
-		out, _ := os.Create(tempZip)
-
-		pw := &ProgressWriter{Conn: conn}
-		io.Copy(out, io.TeeReader(resp.Body, pw))
-
-		out.Close()
-		resp.Body.Close()
-
-		finalMB := float64(pw.TotalDownloaded) / 1024.0 / 1024.0
-		writeWS(conn, "PROGRESS|download|")
-		writeWS(conn, fmt.Sprintf("✅ SYSTEM: Download complete (%.1f MB). Extracting...", finalMB))
-
-		rZip, err := zip.OpenReader(tempZip)
-		if err == nil {
-			for _, f := range rZip.File {
-				pathParts := strings.Split(f.Name, "/")
-				if len(pathParts) <= 1 {
-					continue
-				}
-				cleanSubPath := strings.Join(pathParts[1:], "/")
-				if cleanSubPath == "" {
-					continue
-				}
-
-				fpath := filepath.Join(appFolder, cleanSubPath)
-
-				// SECURITY: Zip Slip Vulnerability Prevention
-				if !strings.HasPrefix(filepath.Clean(fpath), filepath.Clean(appFolder)+string(os.PathSeparator)) {
-					continue
-				}
-
-				if f.FileInfo().IsDir() {
-					os.MkdirAll(fpath, os.ModePerm)
-					continue
-				}
-				os.MkdirAll(filepath.Dir(fpath), os.ModePerm)
-				outFile, _ := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-				rc, _ := f.Open()
-				io.Copy(outFile, rc)
-				outFile.Close()
-				rc.Close()
+			wsMsg := msg.Status
+			if msg.Id != "" {
+				wsMsg = msg.Id + ": " + msg.Status
 			}
-			rZip.Close()
-		}
-		os.Remove(tempZip)
-
-		writeLog("🪄 Scaffolding isolated runtime dependencies...\n")
-		writeWS(conn, "🪄 SYSTEM: Scaffolding isolated runtime dependencies blueprint...")
-
-		cmdInit := exec.Command(pixiExe, "init", ".")
-		cmdInit.Dir = appFolder
-		runAndStream(cmdInit, "⚙️ [Pixi Setup]:", conn)
-
-		if len(req.Environments) > 0 {
-			initArgs := append([]string{"add"}, req.Environments...)
-			cmdAdd := exec.Command(pixiExe, initArgs...)
-			cmdAdd.Dir = appFolder
-			runAndStream(cmdAdd, "⚙️ [Pixi Core]:", conn)
-		}
-
-		for _, instCmd := range req.InstallCommands {
-			if len(instCmd) == 0 {
-				continue
-			}
-			writeLog("⚙️ Synchronizing deployment step -> %v\n", instCmd)
-			writeWS(conn, fmt.Sprintf("⚙️ SYSTEM: Synchronizing deployment step -> %v", instCmd))
-			fullInstallArgs := append([]string{"run"}, instCmd...)
-			cmdInst := exec.Command(pixiExe, fullInstallArgs...)
-			cmdInst.Dir = appFolder
-			runAndStream(cmdInst, "⚙️ [Pixi Fetch]:", conn)
+			wsMsg += progressStr
+			writeWS(conn, "🐳 [Docker Pull]: "+wsMsg)
+			lastUpdate = time.Now()
 		}
 	}
+	reader.Close()
 
 	processMutex.Lock()
 	delete(installingApps, safeSlug)
+	processMutex.Unlock()
 	if refreshInstalledApps != nil {
 		fyne.Do(func() { refreshInstalledApps() })
 	}
-	processMutex.Unlock()
 
-	writeLog("⚡ Launching sandboxed environment context...\n")
-	writeWS(conn, "⚡ SYSTEM: Launching sandboxed environment context...")
+	// ==========================================
+	// RUN DOCKER CONTAINER VIA SDK
+	// ==========================================
+	writeLog("⚡ Launching App...\n")
+	writeWS(conn, "⚡ SYSTEM: Launching App...")
 
-	if len(req.StartCommand) == 0 {
-		writeLog("❌ ERROR: No start command provided.\n")
-		writeWS(conn, "❌ ERROR: No start command provided.")
+	dockerCli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
+
+	portBindings := nat.PortMap{
+		nat.Port(targetPort + "/tcp"): []nat.PortBinding{{HostIP: "127.0.0.1", HostPort: targetPort}},
+	}
+
+	resp, createErr := dockerCli.ContainerCreate(ctx, &dockerContainer.Config{
+		Image: req.ImageLink,
+		Env:   []string{"PORT=" + targetPort},
+	}, &dockerContainer.HostConfig{
+		PortBindings: portBindings,
+		AutoRemove:   true,
+	}, nil, nil, containerName)
+
+	if createErr != nil {
+		writeLog("❌ ERROR: Failed to create App: %v\n", createErr)
+		writeWS(conn, "❌ ERROR: Failed to create App.")
 		return
 	}
 
-	runArgs := append([]string{"run"}, req.StartCommand...)
-	runCmd := exec.Command(pixiExe, runArgs...)
-	runCmd.Dir = appFolder
-	runCmd.Env = append(os.Environ(), "PORT="+targetPort)
-
-	stdout, _ := runCmd.StdoutPipe()
-	stderr, _ := runCmd.StderrPipe()
+	if startErr := dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); startErr != nil {
+		writeLog("❌ ERROR: Failed to start App: %v\n", startErr)
+		writeWS(conn, "❌ ERROR: Failed to start App.")
+		return
+	}
 
 	processMutex.Lock()
-	activeProcesses[safeSlug] = runCmd
+	activeContainers[safeSlug] = true
 	processMutex.Unlock()
-
 	if refreshInstalledApps != nil {
 		fyne.Do(func() { refreshInstalledApps() })
-	}
-
-	if err := runCmd.Start(); err != nil {
-		writeLog("❌ ERROR: Critical startup execution error occurred.\n")
-		writeWS(conn, "❌ ERROR: Critical startup execution error occurred.")
-		return
 	}
 
 	writeLog("🚀 ONLINE: Interface bound on port %s.\n", targetPort)
 	writeWS(conn, fmt.Sprintf("🚀 ONLINE: Interface bound on http://127.0.0.1:%s", targetPort))
 
-	go func() {
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			writeLog("📦 [Out]: %s\n", scanner.Text())
-			writeWS(conn, "📦 [Out]: "+scanner.Text())
-		}
-	}()
+	// Stream Logs back to UI
+	logReader, err := dockerCli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     true,
+	})
+	if err == nil {
+		go func() {
+			outWriter := &UILogWriter{Prefix: "📦 [Out]:", Conn: conn}
+			errWriter := &UILogWriter{Prefix: "ℹ️ [Log]:", Conn: conn}
+			stdcopy.StdCopy(outWriter, errWriter, logReader)
+			logReader.Close()
+		}()
+	}
 
-	go func() {
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			writeLog("ℹ️ [Log]: %s\n", scanner.Text())
-			writeWS(conn, "ℹ️ [Log]: "+scanner.Text())
+	// Wait for container to exit
+	statusCh, errCh := dockerCli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
+		if err != nil {
+			writeLog("⚠️ SYSTEM: App exited with error: %v\n", err)
 		}
-	}()
-
-	runCmd.Wait()
-	writeLog("💤 SYSTEM: Execution layer wrapped cleanly.\n")
-	writeWS(conn, "💤 SYSTEM: Execution layer wrapped cleanly.")
+	case <-statusCh:
+		writeLog("💤 SYSTEM: App stopped cleanly.\n")
+		writeWS(conn, "💤 SYSTEM: App stopped cleanly.")
+	}
 
 	processMutex.Lock()
-	delete(activeProcesses, safeSlug)
+	delete(activeContainers, safeSlug)
 	processMutex.Unlock()
 
 	if refreshInstalledApps != nil {
@@ -497,9 +581,11 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 
 func startAppLocally(rawSlug string) error {
 	slug := sanitizeSlug(rawSlug)
+	containerName := "aibazaar-" + slug
+	ctx := context.Background()
 
 	processMutex.Lock()
-	_, isRunning := activeProcesses[slug]
+	isRunning := activeContainers[slug]
 	processMutex.Unlock()
 
 	if isRunning {
@@ -507,16 +593,14 @@ func startAppLocally(rawSlug string) error {
 	}
 
 	appFolder := getAppFolderPath(slug)
-	pixiExe := getPixiPath()
-
 	configPath := filepath.Join(appFolder, ".bazaar")
 	configData, err := os.ReadFile(configPath)
 	if err != nil {
-		return fmt.Errorf("app configuration missing. Please launch from website first")
+		return fmt.Errorf("app configuration missing")
 	}
 
 	var config BazaarConfig
-	if err := json.Unmarshal(configData, &config); err != nil || len(config.StartCommand) == 0 {
+	if err := json.Unmarshal(configData, &config); err != nil || config.ImageLink == "" {
 		return fmt.Errorf("invalid app configuration")
 	}
 
@@ -524,7 +608,6 @@ func startAppLocally(rawSlug string) error {
 	if targetPort == "" {
 		targetPort = "8899"
 	}
-
 	targetPort = getAvailablePort(targetPort)
 
 	config.Port = targetPort
@@ -533,45 +616,54 @@ func startAppLocally(rawSlug string) error {
 
 	writeLog("⚡ [LOCAL] Launching %s...\n", slug)
 
-	runArgs := append([]string{"run"}, config.StartCommand...)
-	runCmd := exec.Command(pixiExe, runArgs...)
-	runCmd.Dir = appFolder
-	runCmd.Env = append(os.Environ(), "PORT="+targetPort)
+	dockerCli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
 
-	stdout, _ := runCmd.StdoutPipe()
-	stderr, _ := runCmd.StderrPipe()
+	portBindings := nat.PortMap{
+		nat.Port(targetPort + "/tcp"): []nat.PortBinding{{HostIP: "127.0.0.1", HostPort: targetPort}},
+	}
+
+	resp, createErr := dockerCli.ContainerCreate(ctx, &dockerContainer.Config{
+		Image: config.ImageLink,
+		Env:   []string{"PORT=" + targetPort},
+	}, &dockerContainer.HostConfig{
+		PortBindings: portBindings,
+		AutoRemove:   true,
+	}, nil, nil, containerName)
+
+	if createErr != nil {
+		return fmt.Errorf("failed to create app: %v", createErr)
+	}
+
+	if startErr := dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); startErr != nil {
+		return fmt.Errorf("failed to start app: %v", startErr)
+	}
 
 	processMutex.Lock()
-	activeProcesses[slug] = runCmd
+	activeContainers[slug] = true
 	processMutex.Unlock()
-
-	if err := runCmd.Start(); err != nil {
-		writeLog("❌ ERROR: Failed to start locally.\n")
-		return err
-	}
 
 	writeLog("🚀 ONLINE: http://127.0.0.1:%s\n", targetPort)
 
-	go func() {
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			writeLog("📦 [%s]: %s\n", slug, scanner.Text())
-		}
-	}()
+	logReader, err := dockerCli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     true,
+	})
+	if err == nil {
+		go func() {
+			outWriter := &UILogWriter{Prefix: fmt.Sprintf("🐳 [%s]:", slug)}
+			stdcopy.StdCopy(outWriter, outWriter, logReader)
+			logReader.Close()
+		}()
+	}
 
 	go func() {
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			writeLog("ℹ️ [%s]: %s\n", slug, scanner.Text())
-		}
-	}()
-
-	go func() {
-		runCmd.Wait()
+		statusCh, _ := dockerCli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+		<-statusCh
 		writeLog("💤 [%s]: Process finished.\n", slug)
 
 		processMutex.Lock()
-		delete(activeProcesses, slug)
+		delete(activeContainers, slug)
 		processMutex.Unlock()
 		if refreshInstalledApps != nil {
 			fyne.Do(func() { refreshInstalledApps() })
@@ -614,16 +706,47 @@ func getInstalledApps() []string {
 
 func uninstallApp(rawSlug string) {
 	slug := sanitizeSlug(rawSlug)
+	ctx := context.Background()
+
 	processMutex.Lock()
-	if cmd, exists := activeProcesses[slug]; exists {
-		stopProcessTree(cmd)
-		delete(activeProcesses, slug)
+	uninstallingApps[slug] = true
+	if refreshInstalledApps != nil {
+		fyne.Do(func() { refreshInstalledApps() })
 	}
 	processMutex.Unlock()
 
+	// 1. Stop container cleanly first
+	stopDockerContainer(slug)
+
 	targetDir := getAppFolderPath(slug)
+	configPath := filepath.Join(targetDir, ".bazaar")
+
+	// 2. Remove Docker Image via SDK
+	if configData, err := os.ReadFile(configPath); err == nil {
+		var config BazaarConfig
+		if json.Unmarshal(configData, &config) == nil && config.ImageLink != "" && dockerCli != nil {
+			writeLog("🗑️ Removing Docker Image: %s...\n", config.ImageLink)
+			_, err := dockerCli.ImageRemove(ctx, config.ImageLink, types.ImageRemoveOptions{Force: true})
+			if err != nil {
+				writeLog("⚠️ Could not remove image (it may be in use): %v\n", err)
+			}
+		}
+	}
+
+	// 3. Clear local files
 	os.RemoveAll(targetDir)
 	writeLog("🗑️ [DELETE]: Uninstalled %s from local storage.\n", slug)
+
+	processMutex.Lock()
+	delete(uninstallingApps, slug)
+	processMutex.Unlock()
+
+	if refreshInstalledApps != nil {
+		fyne.Do(func() { refreshInstalledApps() })
+	}
+	if refreshExploreApps != nil {
+		fyne.Do(func() { refreshExploreApps() })
+	}
 }
 
 func handleCheck(w http.ResponseWriter, r *http.Request) {
@@ -640,7 +763,7 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&req)
 
 	targetDir := getAppFolderPath(req.Slug)
-	_, err := os.Stat(filepath.Join(targetDir, "pixi.toml"))
+	_, err := os.Stat(filepath.Join(targetDir, ".bazaar"))
 	installed := err == nil
 
 	w.Header().Set("Content-Type", "application/json")
@@ -660,13 +783,8 @@ func handleStop(w http.ResponseWriter, r *http.Request) {
 	var req EndpointRequest
 	json.NewDecoder(r.Body).Decode(&req)
 
-	processMutex.Lock()
-	if cmd, exists := activeProcesses[req.Slug]; exists {
-		stopProcessTree(cmd)
-		delete(activeProcesses, req.Slug)
-		writeLog("🛑 [STOP]: Force terminated process for context: %s\n", req.Slug)
-	}
-	processMutex.Unlock()
+	// Run stop logic in background so API responds instantly
+	go stopDockerContainer(req.Slug)
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -684,9 +802,8 @@ func handleDelete(w http.ResponseWriter, r *http.Request) {
 	var req EndpointRequest
 	json.NewDecoder(r.Body).Decode(&req)
 
-	targetDir := getAppFolderPath(req.Slug)
-	os.RemoveAll(targetDir)
-	writeLog("🗑️ [DELETE]: Purged local environment path: %s\n", targetDir)
+	// Threaded uninstallation
+	go uninstallApp(req.Slug)
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -705,7 +822,11 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if req.Action == "RUN" {
-			executeRunAction(req, conn)
+			fyne.Do(func() {
+				ensureDockerReady(mainWindow, func() {
+					go executeRunAction(req, conn)
+				}, nil)
+			})
 		}
 	}
 }
@@ -742,7 +863,6 @@ func fetchExploreApps(page int, query string, excludeSlugs []string) (*PBRespons
 		osName = "Mac OS"
 	}
 
-	// SECURITY/LOGIC: Requires execution_type = 'daemon_uv' & filters by OS
 	filter := fmt.Sprintf("(platforms ~ '%s' && execution_type = 'daemon_uv')", osName)
 
 	for _, slug := range excludeSlugs {
@@ -753,7 +873,6 @@ func fetchExploreApps(page int, query string, excludeSlugs []string) (*PBRespons
 		filter += fmt.Sprintf(" && (Name ~ '%s' || shortDescription ~ '%s')", query, query)
 	}
 
-	// Always grab the newest apps first
 	reqURL := fmt.Sprintf("%s/api/collections/apps/records?page=%d&perPage=10&sort=-created&filter=%s", pbBaseURL, page, url.QueryEscape(filter))
 
 	resp, err := pbClient.Get(reqURL)
@@ -804,57 +923,9 @@ func fetchFullAppRecord(appId string) (*ClientRequest, error) {
 		req.AppId = v
 	}
 
-	extractStringArray := func(val interface{}) []string {
-		var res []string
-		if val == nil {
-			return res
-		}
-
-		if arr, ok := val.([]interface{}); ok {
-			for _, s := range arr {
-				if str, ok := s.(string); ok {
-					res = append(res, str)
-				}
-			}
-		} else if str, ok := val.(string); ok {
-			var parsed []string
-			if err := json.Unmarshal([]byte(str), &parsed); err == nil {
-				return parsed
-			}
-			if strings.TrimSpace(str) != "" {
-				return strings.Fields(str)
-			}
-		}
-		return res
-	}
-
-	extractInstallCommands := func(val interface{}) [][]string {
-		var res [][]string
-		if val == nil {
-			return res
-		}
-
-		if arr, ok := val.([]interface{}); ok {
-			for _, cmdGrp := range arr {
-				res = append(res, extractStringArray(cmdGrp))
-			}
-		} else if str, ok := val.(string); ok {
-			var parsed [][]string
-			if err := json.Unmarshal([]byte(str), &parsed); err == nil {
-				return parsed
-			}
-			if strings.TrimSpace(str) != "" {
-				res = append(res, strings.Fields(str))
-			}
-		}
-		return res
-	}
-
 	var targetMap map[string]interface{}
-
 	dlRaw, hasSnake := raw["download_links"]
 	dlRawCamel, hasCamel := raw["downloadLinks"]
-
 	var dl interface{}
 	if hasSnake && dlRaw != nil {
 		dl = dlRaw
@@ -877,26 +948,8 @@ func fetchFullAppRecord(appId string) (*ClientRequest, error) {
 		targetMap = raw
 	}
 
-	if v, ok := targetMap["github_url"].(string); ok {
-		req.GithubURL = v
-	}
-	req.Environments = extractStringArray(targetMap["environments"])
-	req.StartCommand = extractStringArray(targetMap["start_command"])
-	req.InstallCommands = extractInstallCommands(targetMap["install_commands"])
-
-	if len(req.StartCommand) == 0 {
-		if rawCmd, exists := raw["start_command"]; exists {
-			req.StartCommand = extractStringArray(rawCmd)
-		}
-	}
-
-	if len(req.StartCommand) == 0 {
-		if rawCmd, exists := raw["startCommand"]; exists {
-			req.StartCommand = extractStringArray(rawCmd)
-		}
-		if rawCmd, exists := targetMap["startCommand"]; exists {
-			req.StartCommand = extractStringArray(rawCmd)
-		}
+	if v, ok := targetMap["image_link"].(string); ok {
+		req.ImageLink = v
 	}
 
 	return req, nil
@@ -916,14 +969,22 @@ func fetchIcon(appId, iconName string) fyne.Resource {
 	return fyne.NewStaticResource(iconName, b)
 }
 
-func startServer() {
+func startServer() bool {
+	ln, err := net.Listen("tcp", "127.0.0.1:4500")
+	if err != nil {
+		return false
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/check", handleCheck)
 	mux.HandleFunc("/stop", handleStop)
 	mux.HandleFunc("/delete", handleDelete)
 	mux.HandleFunc("/ws", handleWebSocket)
-	writeLog("📡 AI BAZAAR NATIVE ENGINE ONLINE (Port: 4500)\n")
-	go http.ListenAndServe("127.0.0.1:4500", mux)
+	writeLog("📡 AI BAZAAR ENGINE ONLINE (Port: 4500)\n")
+
+	s := &http.Server{Handler: mux}
+	go s.Serve(ln)
+	return true
 }
 
 func main() {
@@ -945,48 +1006,65 @@ func main() {
 		a.SetIcon(appIcon)
 	}
 
-	w := a.NewWindow("AI Bazaar Local Engine")
-	w.Resize(fyne.NewSize(850, 600))
-	w.SetFixedSize(true)
+	mainWindow = a.NewWindow("AI Bazaar Local Engine")
+	mainWindow.Resize(fyne.NewSize(850, 600))
+	mainWindow.SetFixedSize(true)
 
 	if appIcon != nil {
-		w.SetIcon(appIcon)
+		mainWindow.SetIcon(appIcon)
 	}
 
-	w.SetCloseIntercept(func() {
+	mainWindow.SetCloseIntercept(func() {
 		processMutex.Lock()
-		runningCount := len(activeProcesses)
+		runningCount := len(activeContainers)
+		installingCount := len(installingApps)
+		startingCount := len(startingApps)
+		stoppingCount := len(stoppingApps)
+		uninstallingCount := len(uninstallingApps)
 		processMutex.Unlock()
 
-		msg := "Are you sure you want to exit the AI Bazaar Engine?"
-		if runningCount > 0 {
-			msg += fmt.Sprintf("\n\nThis will forcefully stop %d running AI model(s).", runningCount)
+		if runningCount > 0 || installingCount > 0 || startingCount > 0 || stoppingCount > 0 || uninstallingCount > 0 {
+			var reasons []string
+			if runningCount > 0 {
+				reasons = append(reasons, fmt.Sprintf("%d AI model(s) running", runningCount))
+			}
+			if installingCount > 0 {
+				reasons = append(reasons, fmt.Sprintf("%d app(s) installing", installingCount))
+			}
+			if startingCount > 0 {
+				reasons = append(reasons, fmt.Sprintf("%d app(s) starting", startingCount))
+			}
+			if stoppingCount > 0 {
+				reasons = append(reasons, fmt.Sprintf("%d app(s) stopping", stoppingCount))
+			}
+			if uninstallingCount > 0 {
+				reasons = append(reasons, fmt.Sprintf("%d app(s) uninstalling", uninstallingCount))
+			}
+
+			dialog.ShowInformation(
+				"Operation in Progress",
+				fmt.Sprintf("AI Bazaar cannot close yet because:\n\n- %s\n\nPlease wait for all tasks to complete or stop all active apps in the 'Installed Apps' tab before closing.", strings.Join(reasons, "\n- ")),
+				mainWindow,
+			)
+			return // Abort the close action
 		}
 
-		dialog.ShowConfirm("Confirm Exit", msg, func(ok bool) {
-			if ok {
-				writeLog("🛑 Shutting down daemon...\n")
-				processMutex.Lock()
-				for _, cmd := range activeProcesses {
-					stopProcessTree(cmd)
-				}
-				processMutex.Unlock()
-				a.Quit()
-			}
-		}, w)
+		// Zero apps running/installing/starting/stopping/uninstalling. Clean exit!
+		writeLog("🛑 Shutting down daemon...\n")
+		a.Quit()
 	})
 
 	logBinding = binding.NewString()
-	logBinding.Set("Welcome to the AI Bazaar Local Engine.\nReady to connect.\n")
+	logBinding.Set("Welcome to the AI Bazaar Engine.\nReady to connect.\n")
 
 	// ==========================================
-	// 1. TERMINAL TAB
+	// 1. LOGS TAB
 	// ==========================================
 	terminalUI := newReadOnlyEntry()
 	terminalUI.Bind(logBinding)
-	scrollContainer := container.NewScroll(terminalUI)
+	scrollContainer := fyneContainer.NewScroll(terminalUI)
 
-	btnClear := widget.NewButton("🧹 Clear Terminal", func() {
+	btnClear := widget.NewButton("🧹 Clear Logs", func() {
 		logMutex.Lock()
 		permanentLog = ""
 		logMutex.Unlock()
@@ -995,11 +1073,11 @@ func main() {
 		}
 	})
 
-	topBar := container.NewPadded(
-		container.NewHBox(layout.NewSpacer(), btnClear),
+	topBar := fyneContainer.NewPadded(
+		fyneContainer.NewHBox(layout.NewSpacer(), btnClear),
 	)
-	terminalLayout := container.NewBorder(topBar, nil, nil, nil, scrollContainer)
-	tabTerminal := container.NewTabItem("🖥️ Terminal", container.NewPadded(terminalLayout))
+	terminalLayout := fyneContainer.NewBorder(topBar, nil, nil, nil, scrollContainer)
+	tabTerminal := fyneContainer.NewTabItem("📋 Logs", fyneContainer.NewPadded(terminalLayout))
 
 	// ==========================================
 	// 2. EXPLORE TAB
@@ -1008,8 +1086,8 @@ func main() {
 	currentPage := 1
 	currentQuery := ""
 
-	exploreContent := container.NewVBox()
-	exploreScroll := container.NewScroll(exploreContent)
+	exploreContent := fyneContainer.NewVBox()
+	exploreScroll := fyneContainer.NewScroll(exploreContent)
 
 	searchInput := widget.NewEntry()
 	searchInput.PlaceHolder = "Search AI apps... (Press Enter to search)"
@@ -1044,7 +1122,7 @@ func main() {
 	})
 
 	loadExploreData = func() {
-		exploreContent.Objects = []fyne.CanvasObject{container.NewCenter(widget.NewLabel("Connecting to AI Bazaar..."))}
+		exploreContent.Objects = []fyne.CanvasObject{fyneContainer.NewCenter(widget.NewLabel("Connecting to AI Bazaar..."))}
 		exploreContent.Refresh()
 
 		go func(page int, query string) {
@@ -1058,7 +1136,7 @@ func main() {
 				retryBtn := widget.NewButtonWithIcon("Try Again", theme.ViewRefreshIcon(), func() {
 					loadExploreData()
 				})
-				newObjects = []fyne.CanvasObject{container.NewVBox(errLbl, retryBtn)}
+				newObjects = []fyne.CanvasObject{fyneContainer.NewVBox(errLbl, retryBtn)}
 			} else if len(res.Items) == 0 {
 				newObjects = []fyne.CanvasObject{widget.NewLabel("No compatible apps found for your operating system.")}
 			} else {
@@ -1094,8 +1172,8 @@ func main() {
 					descLbl := widget.NewLabel(shortDesc)
 					descLbl.Wrapping = fyne.TextTruncate
 
-					titleBox := container.NewBorder(nil, nil, nameLbl, sizeLbl, layout.NewSpacer())
-					textCol := container.NewVBox(titleBox, descLbl)
+					titleBox := fyneContainer.NewBorder(nil, nil, nameLbl, sizeLbl, layout.NewSpacer())
+					textCol := fyneContainer.NewVBox(titleBox, descLbl)
 
 					appId := item.Id
 					appSlug := item.Slug
@@ -1103,48 +1181,48 @@ func main() {
 					appIcon := item.Icon
 
 					installBtn := widget.NewButton("Install", func() {
-						if switchToInstalledTab != nil {
-							switchToInstalledTab()
-						}
-
-						processMutex.Lock()
-						installingApps[appSlug] = true
-						processMutex.Unlock()
-
-						if refreshInstalledApps != nil {
-							fyne.Do(func() { refreshInstalledApps() })
-						}
-
-						if refreshExploreApps != nil {
-							fyne.Do(func() { refreshExploreApps() })
-						}
-
-						go func(id, slug, name, icon string) {
-							req, err := fetchFullAppRecord(id)
-
-							if err != nil || req == nil || req.GithubURL == "" {
-								writeLog("❌ ERROR: Failed to fetch app installation data from PocketBase.\n")
-								processMutex.Lock()
-								delete(installingApps, slug)
-								processMutex.Unlock()
-								if refreshInstalledApps != nil {
-									fyne.Do(func() { refreshInstalledApps() })
-								}
-								return
+						ensureDockerReady(mainWindow, func() {
+							if switchToInstalledTab != nil {
+								switchToInstalledTab()
 							}
 
-							req.AppName = name
-							req.AppIcon = icon
-							req.AppId = id
-							req.Slug = slug
+							processMutex.Lock()
+							installingApps[appSlug] = true
+							processMutex.Unlock()
 
-							executeRunAction(*req, nil)
+							if refreshInstalledApps != nil {
+								fyne.Do(func() { refreshInstalledApps() })
+							}
+							if refreshExploreApps != nil {
+								fyne.Do(func() { refreshExploreApps() })
+							}
 
-						}(appId, appSlug, appName, appIcon)
+							go func(id, slug, name, icon string) {
+								req, err := fetchFullAppRecord(id)
+
+								if err != nil || req == nil || req.ImageLink == "" {
+									writeLog("❌ ERROR: Failed to fetch app Docker Image from PocketBase.\n")
+									processMutex.Lock()
+									delete(installingApps, slug)
+									processMutex.Unlock()
+									if refreshInstalledApps != nil {
+										fyne.Do(func() { refreshInstalledApps() })
+									}
+									return
+								}
+
+								req.AppName = name
+								req.AppIcon = icon
+								req.AppId = id
+								req.Slug = slug
+
+								executeRunAction(*req, nil)
+							}(appId, appSlug, appName, appIcon)
+						}, nil)
 					})
 
-					card := container.NewBorder(nil, nil, container.NewPadded(img), container.NewPadded(installBtn), textCol)
-					newObjects = append(newObjects, container.NewPadded(card), widget.NewSeparator())
+					card := fyneContainer.NewBorder(nil, nil, fyneContainer.NewPadded(img), fyneContainer.NewPadded(installBtn), textCol)
+					newObjects = append(newObjects, fyneContainer.NewPadded(card), widget.NewSeparator())
 				}
 				fyne.Do(func() {
 					lblPage.SetText(fmt.Sprintf("Page %d of %d", res.Page, res.TotalPages))
@@ -1162,18 +1240,18 @@ func main() {
 
 	refreshExploreApps = loadExploreData
 
-	searchTools := container.NewHBox(searchBtn, btnRefreshExplore)
-	searchBox := container.NewBorder(nil, nil, nil, searchTools, searchInput)
+	searchTools := fyneContainer.NewHBox(searchBtn, btnRefreshExplore)
+	searchBox := fyneContainer.NewBorder(nil, nil, nil, searchTools, searchInput)
 
-	paginationBox := container.NewHBox(layout.NewSpacer(), btnPrev, lblPage, btnNext, layout.NewSpacer())
-	exploreLayout := container.NewBorder(searchBox, paginationBox, nil, nil, exploreScroll)
-	tabExplore := container.NewTabItem("🌐 Explore", container.NewPadded(exploreLayout))
+	paginationBox := fyneContainer.NewHBox(layout.NewSpacer(), btnPrev, lblPage, btnNext, layout.NewSpacer())
+	exploreLayout := fyneContainer.NewBorder(searchBox, paginationBox, nil, nil, exploreScroll)
+	tabExplore := fyneContainer.NewTabItem("🌐 Explore", fyneContainer.NewPadded(exploreLayout))
 
 	// ==========================================
 	// 3. INSTALLED APPS TAB
 	// ==========================================
-	var tabs *container.AppTabs
-	appList := container.NewVBox()
+	var tabs *fyneContainer.AppTabs
+	appList := fyneContainer.NewVBox()
 
 	updateApps := func() {
 		appList.Objects = nil
@@ -1183,11 +1261,14 @@ func main() {
 			appList.Add(widget.NewLabel("No AI models installed locally."))
 		} else {
 			for _, slug := range installedApps {
-				appSlug := sanitizeSlug(slug) // Security pass
+				appSlug := sanitizeSlug(slug)
 
 				processMutex.Lock()
-				_, isRunning := activeProcesses[appSlug]
+				isRunning := activeContainers[appSlug]
 				isInstalling := installingApps[appSlug]
+				isStarting := startingApps[appSlug]
+				isStopping := stoppingApps[appSlug]
+				isUninstalling := uninstallingApps[appSlug]
 				processMutex.Unlock()
 
 				var actionBtn *widget.Button
@@ -1243,8 +1324,17 @@ func main() {
 				statusColor := color.RGBA{150, 150, 150, 255}
 
 				if isInstalling {
-					statusText = "Downloading... (Check Terminal)"
+					statusText = "Downloading app... (Check Logs)"
 					statusColor = color.RGBA{56, 189, 248, 255}
+				} else if isStarting {
+					statusText = "Starting app..."
+					statusColor = color.RGBA{56, 189, 248, 255}
+				} else if isStopping {
+					statusText = "Stopping app..."
+					statusColor = color.RGBA{239, 68, 68, 255}
+				} else if isUninstalling {
+					statusText = "Uninstalling app..."
+					statusColor = color.RGBA{239, 68, 68, 255}
 				} else if isRunning {
 					statusText = fmt.Sprintf("Running (Port %s)", targetPort)
 					statusColor = color.RGBA{16, 185, 129, 255}
@@ -1253,21 +1343,26 @@ func main() {
 				statusLbl := canvas.NewText(statusText, statusColor)
 				statusLbl.TextSize = 12
 
-				textCol := container.NewVBox(nameLbl, statusLbl)
+				textCol := fyneContainer.NewVBox(nameLbl, statusLbl)
 
+				var workingText string
 				if isInstalling {
-					actionBtn = widget.NewButtonWithIcon("Working...", theme.DocumentCreateIcon(), func() {})
+					workingText = "Installing..."
+				} else if isStarting {
+					workingText = "Starting..."
+				} else if isStopping {
+					workingText = "Stopping..."
+				} else if isUninstalling {
+					workingText = "Uninstalling..."
+				}
+
+				if isInstalling || isStarting || isStopping || isUninstalling {
+					actionBtn = widget.NewButton(workingText, func() {})
 					actionBtn.Disable()
 				} else if isRunning {
 					actionBtn = widget.NewButtonWithIcon("Stop", theme.MediaStopIcon(), func() {
-						processMutex.Lock()
-						if cmd, exists := activeProcesses[appSlug]; exists {
-							stopProcessTree(cmd)
-							delete(activeProcesses, appSlug)
-							writeLog("🛑 [STOP]: Force terminated from UI: %s\n", appSlug)
-						}
-						processMutex.Unlock()
-						refreshInstalledApps()
+						// Run in Goroutine to prevent UI lock
+						go stopDockerContainer(appSlug)
 					})
 
 					openBtn = widget.NewButton("🌐 Open UI", func() {
@@ -1277,13 +1372,33 @@ func main() {
 					})
 				} else {
 					actionBtn = widget.NewButtonWithIcon("Start App", theme.MediaPlayIcon(), func() {
-						err := startAppLocally(appSlug)
-						if err != nil {
-							dialog.ShowError(err, w)
-						} else {
-							tabs.Select(tabTerminal)
+						processMutex.Lock()
+						startingApps[appSlug] = true
+						processMutex.Unlock()
+						if refreshInstalledApps != nil {
 							refreshInstalledApps()
 						}
+
+						ensureDockerReady(mainWindow, func() {
+							err := startAppLocally(appSlug)
+							processMutex.Lock()
+							delete(startingApps, appSlug)
+							processMutex.Unlock()
+
+							fyne.Do(func() {
+								if err != nil {
+									dialog.ShowError(err, mainWindow)
+								}
+								refreshInstalledApps()
+							})
+						}, func() {
+							processMutex.Lock()
+							delete(startingApps, appSlug)
+							processMutex.Unlock()
+							fyne.Do(func() {
+								refreshInstalledApps()
+							})
+						})
 					})
 
 					if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -1294,30 +1409,29 @@ func main() {
 
 				var btnBox *fyne.Container
 
-				if isInstalling {
-					btnBox = container.NewHBox(actionBtn)
+				if isInstalling || isStarting || isStopping || isUninstalling {
+					progress := widget.NewProgressBarInfinite()
+					progressContainer := fyneContainer.NewGridWrap(fyne.NewSize(100, 36), progress)
+					btnBox = fyneContainer.NewHBox(actionBtn, progressContainer)
 				} else {
 					delBtn := widget.NewButtonWithIcon("Uninstall", theme.DeleteIcon(), func() {
-						dialog.ShowConfirm("Uninstall App", "Are you sure you want to delete "+displayName+"?", func(ok bool) {
+						dialog.ShowConfirm("Uninstall App", "Are you sure you want to delete "+displayName+"?\nThis will remove the app files and clear storage space.", func(ok bool) {
 							if ok {
-								uninstallApp(appSlug)
-								refreshInstalledApps()
-								if refreshExploreApps != nil && exploreLoaded {
-									fyne.Do(func() { refreshExploreApps() })
-								}
+								// Run in Goroutine to prevent UI lock
+								go uninstallApp(appSlug)
 							}
-						}, w)
+						}, mainWindow)
 					})
 
 					if isRunning {
-						btnBox = container.NewHBox(openBtn, actionBtn, delBtn)
+						btnBox = fyneContainer.NewHBox(openBtn, actionBtn, delBtn)
 					} else {
-						btnBox = container.NewHBox(actionBtn, delBtn)
+						btnBox = fyneContainer.NewHBox(actionBtn, delBtn)
 					}
 				}
 
-				card := container.NewBorder(nil, nil, container.NewPadded(img), container.NewPadded(btnBox), container.NewPadded(textCol))
-				appList.Add(container.NewPadded(card))
+				card := fyneContainer.NewBorder(nil, nil, fyneContainer.NewPadded(img), fyneContainer.NewPadded(btnBox), fyneContainer.NewPadded(textCol))
+				appList.Add(fyneContainer.NewPadded(card))
 				appList.Add(widget.NewSeparator())
 			}
 		}
@@ -1330,10 +1444,10 @@ func main() {
 		updateApps()
 	})
 
-	tabApps := container.NewTabItem("📦 Installed Apps",
-		container.NewBorder(
-			container.NewPadded(btnRefreshApps), nil, nil, nil,
-			container.NewScroll(appList),
+	tabApps := fyneContainer.NewTabItem("📦 Installed Apps",
+		fyneContainer.NewBorder(
+			fyneContainer.NewPadded(btnRefreshApps), nil, nil, nil,
+			fyneContainer.NewScroll(appList),
 		),
 	)
 
@@ -1345,7 +1459,7 @@ func main() {
 		logoImg := canvas.NewImageFromFile("logo.png")
 		logoImg.FillMode = canvas.ImageFillContain
 		logoImg.SetMinSize(fyne.NewSize(120, 120))
-		logoUI = container.NewCenter(container.NewPadded(logoImg))
+		logoUI = fyneContainer.NewCenter(fyneContainer.NewPadded(logoImg))
 	} else {
 		logoUI = layout.NewSpacer()
 	}
@@ -1356,7 +1470,7 @@ func main() {
 	lblTitle.Alignment = fyne.TextAlignCenter
 
 	lblDesc := widget.NewLabelWithStyle(
-		"The lightweight bridge daemon for securely executing AI models.\nPowered by Portable Pixi Runtimes.\nListening on Port 4500.",
+		"The lightweight bridge for securely executing AI models.\nPowered by AI Bazaar Engine.\nListening on Port 4500.",
 		fyne.TextAlignCenter,
 		fyne.TextStyle{},
 	)
@@ -1368,24 +1482,26 @@ func main() {
 		}
 	})
 
-	headerBox := container.NewVBox(
+	headerBox := fyneContainer.NewVBox(
 		logoUI,
-		container.NewPadded(container.NewCenter(lblTitle)),
-		container.NewPadded(lblDesc),
-		container.NewPadded(btnStore),
+		fyneContainer.NewPadded(fyneContainer.NewCenter(lblTitle)),
+		fyneContainer.NewPadded(lblDesc),
+		fyneContainer.NewPadded(btnStore),
 		widget.NewSeparator(),
 	)
 
-	tabSettings := container.NewTabItem("⚙️ Settings", container.NewScroll(container.NewPadded(headerBox)))
+	tabSettings := fyneContainer.NewTabItem("⚙️ Settings", fyneContainer.NewScroll(fyneContainer.NewPadded(headerBox)))
 
-	tabs = container.NewAppTabs(tabTerminal, tabExplore, tabApps, tabSettings)
-	tabs.SetTabLocation(container.TabLocationTop)
+	tabs = fyneContainer.NewAppTabs(tabTerminal, tabExplore, tabApps, tabSettings)
+	tabs.SetTabLocation(fyneContainer.TabLocationTop)
 
 	switchToInstalledTab = func() {
-		tabs.Select(tabApps)
+		fyne.Do(func() {
+			tabs.Select(tabApps)
+		})
 	}
 
-	tabs.OnSelected = func(tab *container.TabItem) {
+	tabs.OnSelected = func(tab *fyneContainer.TabItem) {
 		if tab.Text == "📦 Installed Apps" {
 			updateApps()
 		} else if tab.Text == "🌐 Explore" {
@@ -1396,8 +1512,20 @@ func main() {
 		}
 	}
 
-	w.SetContent(tabs)
+	mainWindow.SetContent(tabs)
 
-	startServer()
-	w.ShowAndRun()
+	// Pre-flight check on initial app startup
+	fyne.Do(func() {
+		ensureDockerReady(mainWindow, func() {
+			if !startServer() {
+				d := dialog.NewInformation("Port Conflict", "Port 4500 is already in use.\n\nPlease close any other instances of AI Bazaar and try again.", mainWindow)
+				d.SetOnClosed(func() {
+					a.Quit()
+				})
+				d.Show()
+			}
+		}, nil)
+	})
+
+	mainWindow.ShowAndRun()
 }
