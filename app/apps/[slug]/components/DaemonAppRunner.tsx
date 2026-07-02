@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { 
-  Play, 
-  Terminal, 
-  AlertTriangle, 
-  ExternalLink, 
+import {
+  Play,
+  Terminal,
+  AlertTriangle,
+  ExternalLink,
   StopCircle,
   X,
   Download
@@ -16,7 +16,7 @@ type DaemonAppRunnerProps = {
   appName: string;
   appSlug: string;
   appIcon?: string;
-  appId?: string;   
+  appId?: string;
   downloadLinks: {
     image_link: string; // <-- Updated to match PocketBase and Go Daemon
     internal_port?: string | number;
@@ -28,19 +28,19 @@ type DaemonAppRunnerProps = {
 export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId = "", downloadLinks }: DaemonAppRunnerProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
-  
+
   const [status, setStatus] = useState<"idle" | "installing" | "running" | "stopping" | "error">("idle");
   const [isInstalled, setIsInstalled] = useState(false);
   const [isDaemonOffline, setIsDaemonOffline] = useState(false);
-  
+
   const [appUrl, setAppUrl] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [progressLogs, setProgressLogs] = useState<Record<string, string>>({});
-  
+
   const [showDaemonModal, setShowDaemonModal] = useState(false);
   const [showTerminalModal, setShowTerminalModal] = useState(false);
   const [showMobileModal, setShowMobileModal] = useState(false);
-  
+
   const logContainerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -63,14 +63,14 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image_link: downloadLinks.image_link, slug: appSlug })
         })
-        .then(res => res.json())
-        .then(data => {
-          setIsInstalled(data.installed);
-          setIsDaemonOffline(false);
-        })
-        .catch(() => { 
-          setIsDaemonOffline(true); 
-        });
+          .then(res => res.json())
+          .then(data => {
+            setIsInstalled(data.installed);
+            setIsDaemonOffline(false);
+          })
+          .catch(() => {
+            setIsDaemonOffline(true);
+          });
       } catch (err) {
         setIsDaemonOffline(true);
       }
@@ -106,12 +106,12 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
         body: JSON.stringify({ image_link: downloadLinks.image_link, slug: appSlug }),
         signal: AbortSignal.timeout(1500)
       }).catch(() => { throw new Error("Offline"); });
-      
+
       if (!res.ok) throw new Error("Offline");
-      
+
       const data = await res.json();
       setIsInstalled(data.installed);
-      setIsDaemonOffline(false); 
+      setIsDaemonOffline(false);
     } catch (err) {
       setIsDaemonOffline(true);
       setShowDaemonModal(true);
@@ -130,13 +130,13 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
     ws.onopen = () => {
       appendLog(`SYSTEM: Connected! Requesting Docker Image pull...`);
       // <-- Updated payload to match Go Struct
-      ws.send(JSON.stringify({ 
-        action: 'RUN', 
+      ws.send(JSON.stringify({
+        action: 'RUN',
         slug: appSlug,
         app_name: appName,
         app_icon: appIcon,
         app_id: appId,
-        image_link: downloadLinks.image_link, 
+        image_link: downloadLinks.image_link,
         port: '8899',
         internal_port: downloadLinks.internal_port ? String(downloadLinks.internal_port) : undefined,
         is_gpu: downloadLinks.is_gpu ?? false,
@@ -154,23 +154,23 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
           const id = parts[1];
           const text = parts.slice(2).join("|");
           if (text.trim() === "") {
-             setProgressLogs(prev => {
-                const updated = {...prev};
-                delete updated[id];
-                return updated;
-             });
+            setProgressLogs(prev => {
+              const updated = { ...prev };
+              delete updated[id];
+              return updated;
+            });
           } else {
-             setProgressLogs(prev => ({ ...prev, [id]: text }));
+            setProgressLogs(prev => ({ ...prev, [id]: text }));
           }
         }
-        return; 
+        return;
       }
 
       appendLog(msg);
 
       if (msg.includes("🚀 ONLINE:")) {
         setStatus("running");
-        setIsInstalled(true); 
+        setIsInstalled(true);
         // Extract port dynamically if possible, or fallback to 8899
         let matchedUrl = "http://127.0.0.1:8899";
         const urlMatch = msg.match(/https?:\/\/[a-zA-Z0-9.-]+:\d+/);
@@ -211,14 +211,17 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
     appendLog(`SYSTEM: Sending termination signal to Docker container...`);
 
     try {
-      await fetch("http://127.0.0.1:4500/stop", { 
+      await fetch("http://127.0.0.1:4500/stop", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug: appSlug }) 
+        body: JSON.stringify({ slug: appSlug })
       });
     } catch (e) {
       console.warn(e);
     }
+
+    // Wait 5 seconds to let the container stop cleanly in the background
+    await new Promise((resolve) => setTimeout(resolve, 4000));
 
     if (wsRef.current) wsRef.current.close();
     setStatus("idle");
@@ -228,7 +231,7 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
   return (
     <>
       <div className="w-full flex flex-col gap-3 mt-2">
-        
+
         {/* --- ADDED CONNECTION INDICATOR HERE --- */}
         <div className="flex items-center justify-center gap-2 mb-1">
           <span className="relative flex h-2.5 w-2.5">
@@ -245,7 +248,7 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
 
         {status === "idle" && (
           <div className="flex gap-2 w-full">
-            <button 
+            <button
               onClick={handleInstallClick}
               className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white font-extrabold text-lg shadow-[0_0_20px_rgba(37,99,235,0.3)] transition-all active:scale-95"
             >
@@ -256,15 +259,14 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
 
         {(status === "installing" || status === "error") && (
           <div className="flex gap-2 w-full">
-            <button 
+            <button
               onClick={() => setShowTerminalModal(true)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl border font-bold text-lg transition-all ${
-                status === "error" 
-                ? "bg-red-500/10 border-red-500/30 text-red-500" 
-                : "bg-zinc-800 border-zinc-700 text-amber-400 animate-pulse"
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl border font-bold text-lg transition-all ${status === "error"
+                  ? "bg-red-500/10 border-red-500/30 text-red-500"
+                  : "bg-zinc-800 border-zinc-700 text-amber-400 animate-pulse"
+                }`}
             >
-              <Terminal className="w-5 h-5" /> 
+              <Terminal className="w-5 h-5" />
               {status === "error" ? "Installation Failed" : "Downloading AI Engine..."}
             </button>
           </div>
@@ -289,37 +291,37 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
 
       {mounted && createPortal(
         <>
-          {showMobileModal && ( <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">...</div> )}
-          
-          {showDaemonModal && ( 
+          {showMobileModal && (<div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">...</div>)}
+
+          {showDaemonModal && (
             <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
               <div className="bg-[#0c0c0e] border border-zinc-800 p-6 rounded-2xl max-w-md w-full text-center shadow-2xl relative">
-                <button 
+                <button
                   onClick={() => setShowDaemonModal(false)}
                   className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-300 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
-                
+
                 <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-4 border border-amber-500/20">
                   <AlertTriangle className="w-6 h-6 text-amber-400" />
                 </div>
-                
+
                 <h3 className="text-xl font-black text-zinc-100 tracking-tight">AI Bazaar Engine Offline</h3>
                 <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
                   The local backend daemon isn't running. Kindly download and open the engine daemon app to host local models directly from your web interface.
                 </p>
-                
+
                 <div className="mt-5 flex flex-col gap-2">
-                  <a 
-                    href="/download" 
+                  <a
+                    href="/download"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-black font-bold text-sm transition-all"
                   >
                     <Download className="w-4 h-4" /> Download AI Bazaar Daemon
                   </a>
-                  <button 
+                  <button
                     onClick={() => setShowDaemonModal(false)}
                     className="w-full py-2.5 text-zinc-500 hover:text-zinc-300 font-medium text-xs transition-colors"
                   >
@@ -327,7 +329,7 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
                   </button>
                 </div>
               </div>
-            </div> 
+            </div>
           )}
 
           {showTerminalModal && (
@@ -338,13 +340,13 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
                     <Terminal className="w-4 h-4 text-zinc-500 shrink-0" />
                     <span className="text-xs font-mono font-bold text-zinc-400 truncate">daemon :: {appSlug}</span>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 shrink-0">
                     {status === "running" && appUrl && (
-                      <a 
-                        href={appUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
+                      <a
+                        href={appUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-extrabold transition-colors shadow-[0_0_10px_rgba(16,185,129,0.2)]"
                       >
                         <ExternalLink className="w-3.5 h-3.5" /> Open App
@@ -352,9 +354,9 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
                     )}
 
                     {status !== "idle" && status !== "error" && (
-                      <button 
-                        onClick={handleStopClick} 
-                        disabled={status === "stopping"} 
+                      <button
+                        onClick={handleStopClick}
+                        disabled={status === "stopping"}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20 text-amber-500 disabled:opacity-50"
                       >
                         <StopCircle className="w-3.5 h-3.5" /> Stop Run
@@ -366,10 +368,10 @@ export default function DaemonAppRunner({ appName, appSlug, appIcon = "", appId 
                     </button>
                   </div>
                 </div>
-                
+
                 <div ref={logContainerRef} className="flex-1 p-5 font-mono text-[13px] overflow-y-auto text-zinc-400 space-y-2 scroll-smooth">
                   {logs.length === 0 && <span className="text-zinc-600">Waiting for output...</span>}
-                  
+
                   {logs.map((log, i) => {
                     let textClass = "text-zinc-400";
                     if (log.includes("ERROR") || log.includes("❌")) textClass = "text-red-400 font-bold";
