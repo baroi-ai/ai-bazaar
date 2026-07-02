@@ -60,7 +60,7 @@ export default function DownloadEnginePage() {
             <h2 className="text-xl md:text-2xl font-bold mb-2">Windows</h2>
             <p className="text-zinc-500 text-xs md:text-sm mb-6 md:mb-8 flex-1">Windows 10 & 11 (64-bit)</p>
             <a
-              href="https://github.com/baroi-ai/ai-bazaar/releases/download/Engine_4.0/ai-bazaar-windows.zip"
+              href="https://github.com/baroi-ai/ai-bazaar/releases/download/Engine_4.0/AI-Bazaar-Windows-Installer-Setup.exe"
               className="w-full flex items-center justify-center gap-2 py-3 md:py-3.5 rounded-xl bg-zinc-100 hover:bg-white text-black font-bold transition-colors active:scale-95"
             >
               <Download className="w-4 h-4 md:w-5 md:h-5" /> Download
