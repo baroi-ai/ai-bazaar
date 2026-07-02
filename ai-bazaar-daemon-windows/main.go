@@ -47,21 +47,27 @@ const pbBaseURL = "https://api.aibazaars.store/"
 var pbClient = &http.Client{Timeout: 10 * time.Second}
 
 type ClientRequest struct {
-	Action    string `json:"action"`
-	Slug      string `json:"slug"`
-	AppName   string `json:"app_name"`
-	AppIcon   string `json:"app_icon"`
-	AppId     string `json:"app_id"`
-	ImageLink string `json:"image_link"`
-	Port      string `json:"port"`
+	Action       string `json:"action"`
+	Slug         string `json:"slug"`
+	AppName      string `json:"app_name"`
+	AppIcon      string `json:"app_icon"`
+	AppId        string `json:"app_id"`
+	ImageLink    string `json:"image_link"`
+	Port         string `json:"port"`
+	InternalPort string `json:"internal_port"`
+	IsGPU        bool   `json:"is_gpu"`
+	IsFallback   bool   `json:"is_fallback"`
 }
 
 type BazaarConfig struct {
-	AppName   string `json:"app_name"`
-	AppIcon   string `json:"app_icon"`
-	AppId     string `json:"app_id"`
-	ImageLink string `json:"image_link"`
-	Port      string `json:"port"`
+	AppName      string `json:"app_name"`
+	AppIcon      string `json:"app_icon"`
+	AppId        string `json:"app_id"`
+	ImageLink    string `json:"image_link"`
+	Port         string `json:"port"`
+	InternalPort string `json:"internal_port"`
+	IsGPU        bool   `json:"is_gpu"`
+	IsFallback   bool   `json:"is_fallback"`
 }
 
 type EndpointRequest struct {
@@ -141,6 +147,35 @@ func getAvailablePort(desiredPort string) string {
 		return port
 	}
 	return desiredPort
+}
+
+func detectGPUSupport() string {
+	// 1. Check for NVIDIA GPU
+	if err := exec.Command("nvidia-smi").Run(); err == nil {
+		writeLog("🔍 [GPU Detection]: NVIDIA GPU detected via nvidia-smi.\n")
+		return "nvidia"
+	}
+	if dockerCli != nil {
+		if info, err := dockerCli.Info(context.Background()); err == nil {
+			if _, ok := info.Runtimes["nvidia"]; ok {
+				writeLog("🔍 [GPU Detection]: NVIDIA runtime detected in Docker.\n")
+				return "nvidia"
+			}
+		}
+	}
+
+	// 2. Check for AMD GPU (Linux specific paths)
+	if runtime.GOOS == "linux" {
+		if _, err := os.Stat("/dev/kfd"); err == nil {
+			if _, err := os.Stat("/dev/dri"); err == nil {
+				writeLog("🔍 [GPU Detection]: AMD GPU detected via /dev/kfd and /dev/dri.\n")
+				return "amd"
+			}
+		}
+	}
+
+	writeLog("🔍 [GPU Detection]: No compatible GPU found. Defaulting to CPU mode.\n")
+	return "none"
 }
 
 // ---------------------------------------------------------
@@ -409,11 +444,14 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	targetPort = getAvailablePort(targetPort)
 
 	configData := BazaarConfig{
-		AppName:   req.AppName,
-		AppIcon:   req.AppIcon,
-		AppId:     req.AppId,
-		ImageLink: req.ImageLink,
-		Port:      targetPort,
+		AppName:      req.AppName,
+		AppIcon:      req.AppIcon,
+		AppId:        req.AppId,
+		ImageLink:    req.ImageLink,
+		Port:         targetPort,
+		InternalPort: req.InternalPort,
+		IsGPU:        req.IsGPU,
+		IsFallback:   req.IsFallback,
 	}
 	configBytes, _ := json.Marshal(configData)
 	os.MkdirAll(appFolder, 0755)
@@ -505,28 +543,115 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 
 	dockerCli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
 
+	internalPort := req.InternalPort
+	if internalPort == "" {
+		internalPort = targetPort
+	}
+
 	portBindings := nat.PortMap{
-		nat.Port(targetPort + "/tcp"): []nat.PortBinding{{HostIP: "127.0.0.1", HostPort: targetPort}},
+		nat.Port(internalPort + "/tcp"): []nat.PortBinding{{HostIP: "127.0.0.1", HostPort: targetPort}},
 	}
 
-	resp, createErr := dockerCli.ContainerCreate(ctx, &dockerContainer.Config{
-		Image: req.ImageLink,
-		Env:   []string{"PORT=" + targetPort},
-	}, &dockerContainer.HostConfig{
-		PortBindings: portBindings,
-		AutoRemove:   true,
-	}, nil, nil, containerName)
+	var hostConfig dockerContainer.HostConfig
+	hostConfig.PortBindings = portBindings
+	hostConfig.AutoRemove = true
 
-	if createErr != nil {
-		writeLog("❌ ERROR: Failed to create App: %v\n", createErr)
-		writeWS(conn, "❌ ERROR: Failed to create App.")
-		return
+	gpuType := "none"
+	if req.IsGPU {
+		gpuType = detectGPUSupport()
 	}
 
-	if startErr := dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); startErr != nil {
-		writeLog("❌ ERROR: Failed to start App: %v\n", startErr)
-		writeWS(conn, "❌ ERROR: Failed to start App.")
-		return
+	applyGPUConfig := func(gType string) {
+		hostConfig.Resources.DeviceRequests = nil
+		hostConfig.Resources.Devices = nil
+		if gType == "nvidia" {
+			hostConfig.Resources.DeviceRequests = []dockerContainer.DeviceRequest{
+				{
+					Driver:       "nvidia",
+					Count:        -1,
+					Capabilities: [][]string{{"gpu"}},
+				},
+			}
+		} else if gType == "amd" {
+			hostConfig.Resources.Devices = []dockerContainer.DeviceMapping{
+				{
+					PathOnHost:        "/dev/kfd",
+					PathInContainer:   "/dev/kfd",
+					CgroupPermissions: "rwm",
+				},
+				{
+					PathOnHost:        "/dev/dri",
+					PathInContainer:   "/dev/dri",
+					CgroupPermissions: "rwm",
+				},
+			}
+		}
+	}
+
+	var resp dockerContainer.CreateResponse
+	var createErr error
+	var startErr error
+	launched := false
+
+	// Attempt GPU launch if requested and available
+	if req.IsGPU && gpuType != "none" {
+		writeLog("🔌 [GPU]: Attempting to launch in GPU mode (%s)...\n", gpuType)
+		writeWS(conn, fmt.Sprintf("🔌 SYSTEM: Attempting to launch in GPU mode (%s)...", gpuType))
+
+		applyGPUConfig(gpuType)
+		resp, createErr = dockerCli.ContainerCreate(ctx, &dockerContainer.Config{
+			Image: req.ImageLink,
+			Env:   []string{"PORT=" + internalPort},
+		}, &hostConfig, nil, nil, containerName)
+
+		if createErr == nil {
+			startErr = dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
+			if startErr == nil {
+				launched = true
+			} else {
+				writeLog("⚠️ [GPU]: Failed to start container in GPU mode: %v\n", startErr)
+				dockerCli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
+			}
+		} else {
+			writeLog("⚠️ [GPU]: Failed to create container in GPU mode: %v\n", createErr)
+		}
+	}
+
+	// Fallback to CPU mode if not launched
+	if !launched {
+		if req.IsGPU && !req.IsFallback {
+			// User requested GPU, it failed/wasn't found, and they don't want CPU fallback
+			writeLog("❌ ERROR: GPU mode failed, and CPU fallback is disabled.\n")
+			writeWS(conn, "❌ ERROR: GPU mode failed, and CPU fallback is disabled.")
+			return
+		}
+
+		if req.IsGPU {
+			writeLog("⚠️ [GPU]: Falling back to CPU mode...\n")
+			writeWS(conn, "⚠️ SYSTEM: Falling back to CPU mode...")
+		} else {
+			writeLog("ℹ️ Launching in CPU mode...\n")
+			writeWS(conn, "ℹ️ SYSTEM: Launching in CPU mode...")
+		}
+
+		applyGPUConfig("none")
+		resp, createErr = dockerCli.ContainerCreate(ctx, &dockerContainer.Config{
+			Image: req.ImageLink,
+			Env:   []string{"PORT=" + internalPort},
+		}, &hostConfig, nil, nil, containerName)
+
+		if createErr != nil {
+			writeLog("❌ ERROR: Failed to create App: %v\n", createErr)
+			writeWS(conn, "❌ ERROR: Failed to create App.")
+			return
+		}
+
+		startErr = dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
+		if startErr != nil {
+			writeLog("❌ ERROR: Failed to start App: %v\n", startErr)
+			writeWS(conn, "❌ ERROR: Failed to start App.")
+			return
+		}
 	}
 
 	processMutex.Lock()
@@ -618,24 +743,105 @@ func startAppLocally(rawSlug string) error {
 
 	dockerCli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
 
+	internalPort := config.InternalPort
+	if internalPort == "" {
+		internalPort = targetPort
+	}
+
 	portBindings := nat.PortMap{
-		nat.Port(targetPort + "/tcp"): []nat.PortBinding{{HostIP: "127.0.0.1", HostPort: targetPort}},
+		nat.Port(internalPort + "/tcp"): []nat.PortBinding{{HostIP: "127.0.0.1", HostPort: targetPort}},
 	}
 
-	resp, createErr := dockerCli.ContainerCreate(ctx, &dockerContainer.Config{
-		Image: config.ImageLink,
-		Env:   []string{"PORT=" + targetPort},
-	}, &dockerContainer.HostConfig{
-		PortBindings: portBindings,
-		AutoRemove:   true,
-	}, nil, nil, containerName)
+	var hostConfig dockerContainer.HostConfig
+	hostConfig.PortBindings = portBindings
+	hostConfig.AutoRemove = true
 
-	if createErr != nil {
-		return fmt.Errorf("failed to create app: %v", createErr)
+	gpuType := "none"
+	if config.IsGPU {
+		gpuType = detectGPUSupport()
 	}
 
-	if startErr := dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); startErr != nil {
-		return fmt.Errorf("failed to start app: %v", startErr)
+	applyGPUConfig := func(gType string) {
+		hostConfig.Resources.DeviceRequests = nil
+		hostConfig.Resources.Devices = nil
+		if gType == "nvidia" {
+			hostConfig.Resources.DeviceRequests = []dockerContainer.DeviceRequest{
+				{
+					Driver:       "nvidia",
+					Count:        -1,
+					Capabilities: [][]string{{"gpu"}},
+				},
+			}
+		} else if gType == "amd" {
+			hostConfig.Resources.Devices = []dockerContainer.DeviceMapping{
+				{
+					PathOnHost:        "/dev/kfd",
+					PathInContainer:   "/dev/kfd",
+					CgroupPermissions: "rwm",
+				},
+				{
+					PathOnHost:        "/dev/dri",
+					PathInContainer:   "/dev/dri",
+					CgroupPermissions: "rwm",
+				},
+			}
+		}
+	}
+
+	var resp dockerContainer.CreateResponse
+	var createErr error
+	var startErr error
+	launched := false
+
+	// Attempt GPU launch if requested and available
+	if config.IsGPU && gpuType != "none" {
+		writeLog("🔌 [GPU]: [LOCAL] Attempting to launch in GPU mode (%s)...\n", gpuType)
+
+		applyGPUConfig(gpuType)
+		resp, createErr = dockerCli.ContainerCreate(ctx, &dockerContainer.Config{
+			Image: config.ImageLink,
+			Env:   []string{"PORT=" + internalPort},
+		}, &hostConfig, nil, nil, containerName)
+
+		if createErr == nil {
+			startErr = dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
+			if startErr == nil {
+				launched = true
+			} else {
+				writeLog("⚠️ [GPU]: [LOCAL] Failed to start container in GPU mode: %v\n", startErr)
+				dockerCli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
+			}
+		} else {
+			writeLog("⚠️ [GPU]: [LOCAL] Failed to create container in GPU mode: %v\n", createErr)
+		}
+	}
+
+	// Fallback to CPU mode if not launched
+	if !launched {
+		if config.IsGPU && !config.IsFallback {
+			return fmt.Errorf("GPU mode failed, and CPU fallback is disabled")
+		}
+
+		if config.IsGPU {
+			writeLog("⚠️ [GPU]: [LOCAL] Falling back to CPU mode...\n")
+		} else {
+			writeLog("ℹ️ [LOCAL] Launching in CPU mode...\n")
+		}
+
+		applyGPUConfig("none")
+		resp, createErr = dockerCli.ContainerCreate(ctx, &dockerContainer.Config{
+			Image: config.ImageLink,
+			Env:   []string{"PORT=" + internalPort},
+		}, &hostConfig, nil, nil, containerName)
+
+		if createErr != nil {
+			return fmt.Errorf("failed to create app in CPU mode: %v", createErr)
+		}
+
+		startErr = dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
+		if startErr != nil {
+			return fmt.Errorf("failed to start app in CPU mode: %v", startErr)
+		}
 	}
 
 	processMutex.Lock()
@@ -952,6 +1158,30 @@ func fetchFullAppRecord(appId string) (*ClientRequest, error) {
 		req.ImageLink = v
 	}
 
+	var internalPort string
+	if v, ok := raw["internal_port"].(string); ok {
+		internalPort = v
+	} else if v, ok := raw["internalPort"].(string); ok {
+		internalPort = v
+	} else if v, ok := raw["internal_port"].(float64); ok {
+		internalPort = fmt.Sprintf("%.0f", v)
+	} else if v, ok := raw["internalPort"].(float64); ok {
+		internalPort = fmt.Sprintf("%.0f", v)
+	}
+
+	if internalPort == "" && targetMap != nil {
+		if v, ok := targetMap["internal_port"].(string); ok {
+			internalPort = v
+		} else if v, ok := targetMap["internalPort"].(string); ok {
+			internalPort = v
+		} else if v, ok := targetMap["internal_port"].(float64); ok {
+			internalPort = fmt.Sprintf("%.0f", v)
+		} else if v, ok := targetMap["internalPort"].(float64); ok {
+			internalPort = fmt.Sprintf("%.0f", v)
+		}
+	}
+	req.InternalPort = internalPort
+
 	return req, nil
 }
 
@@ -1153,7 +1383,7 @@ func main() {
 						})
 					}(item.Id, item.Icon, img)
 
-					nameLbl := canvas.NewText(item.Name, color.White)
+					nameLbl := canvas.NewText(item.Name, theme.ForegroundColor())
 					nameLbl.TextStyle.Bold = true
 					nameLbl.TextSize = 16
 
@@ -1316,7 +1546,7 @@ func main() {
 					}
 				}
 
-				nameLbl := canvas.NewText(displayName, color.White)
+				nameLbl := canvas.NewText(displayName, theme.ForegroundColor())
 				nameLbl.TextStyle.Bold = true
 				nameLbl.TextSize = 16
 
