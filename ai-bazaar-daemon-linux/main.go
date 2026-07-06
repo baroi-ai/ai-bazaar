@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	// Docker SDK imports
@@ -42,7 +43,9 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-const pbBaseURL = "https://api.aibazaars.store/"
+//const pbBaseURL = "https://api.aibazaars.store/"
+
+const pbBaseURL = "http://127.0.0.1:8080"
 
 var pbClient = &http.Client{Timeout: 10 * time.Second}
 
@@ -101,6 +104,9 @@ var mainWindow fyne.Window
 
 // Global Docker Client
 var dockerCli *client.Client
+
+var podmanCmd *exec.Cmd
+var podmanSocketPath string
 
 // UI Controller Hooks
 var refreshInstalledApps func()
@@ -176,83 +182,245 @@ func detectGPUSupport() string {
 	return "none"
 }
 
+func findPodmanPath() (string, error) {
+	baseDir := getBaseDir()
+
+	// Ensure the bin/ directory exists
+	binDir := filepath.Join(baseDir, "bin")
+	os.MkdirAll(binDir, 0755)
+
+	// Check local bin paths
+	localPaths := []string{
+		filepath.Join(binDir, "podman.AppImage"),
+		filepath.Join(binDir, "podman.Appimage"),
+		filepath.Join(binDir, "podman"),
+	}
+
+	for _, localPath := range localPaths {
+		if _, err := os.Stat(localPath); err == nil {
+			// Make sure it is executable
+			if err := os.Chmod(localPath, 0755); err != nil {
+				writeLog("⚠️ Failed to set executable permissions on %s: %v\n", localPath, err)
+			}
+			return localPath, nil
+		}
+	}
+
+	// Fallback to system-wide podman
+	if sysPath, err := exec.LookPath("podman"); err == nil {
+		return sysPath, nil
+	}
+
+	return "", fmt.Errorf("podman executable not found in local bin directory or system PATH")
+}
+
+func startPodmanService() (string, error) {
+	// If it's already running, return the socket path
+	if podmanCmd != nil && podmanCmd.Process != nil {
+		return "unix://" + podmanSocketPath, nil
+	}
+
+	podmanPath, err := findPodmanPath()
+	if err != nil {
+		return "", err
+	}
+
+	// Create a unique socket path for this run
+	baseDir := getBaseDir()
+	socketDir := filepath.Join(baseDir, "tmp")
+	os.MkdirAll(socketDir, 0755)
+	socketFile := filepath.Join(socketDir, "podman.sock")
+	podmanSocketPath = socketFile
+
+	// Remove old socket if exists
+	os.Remove(socketFile)
+
+	writeLog("🚀 Starting Podman system service on %s...\n", socketFile)
+
+	// Command: podman system service --time=0 unix://<socketFile>
+	cmd := exec.Command(podmanPath, "system", "service", "--time=0", "unix://"+socketFile)
+
+	// Set pgid so children are killed together on Linux
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	// Start in background
+	if err := cmd.Start(); err != nil {
+		return "", fmt.Errorf("failed to start podman service: %w", err)
+	}
+	podmanCmd = cmd
+
+	// Poll until the socket is active and accepting connections
+	socketURL := "unix://" + socketFile
+	writeLog("⏳ Waiting for Podman service socket to become ready...\n")
+
+	ready := false
+	for i := 0; i < 50; i++ { // Up to 5 seconds
+		if _, err := os.Stat(socketFile); err == nil {
+			// Try to connect to ensure it's responsive
+			conn, err := net.DialTimeout("unix", socketFile, 100*time.Millisecond)
+			if err == nil {
+				conn.Close()
+				ready = true
+				break
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	if !ready {
+		// Clean up on failure
+		cmd.Process.Kill()
+		cmd.Wait()
+		podmanCmd = nil
+		return "", fmt.Errorf("timeout waiting for podman service socket")
+	}
+
+	writeLog("✅ Podman service is active.\n")
+	return socketURL, nil
+}
+
+func cleanupPodmanService() {
+	if podmanCmd != nil && podmanCmd.Process != nil {
+		writeLog("🛑 Terminating Podman API service...\n")
+		// Kill the process group to clean up helper processes as well
+		syscall.Kill(-podmanCmd.Process.Pid, syscall.SIGKILL)
+		podmanCmd.Wait()
+		podmanCmd = nil
+	}
+	if podmanSocketPath != "" {
+		os.Remove(podmanSocketPath)
+	}
+}
+
 // ---------------------------------------------------------
-// DOCKER LIFECYCLE MANAGEMENT (SDK)
+// PODMAN LIFECYCLE MANAGEMENT (SDK)
 // ---------------------------------------------------------
 
-func ensureDockerReady(w fyne.Window, onReady func(), onFailure func()) {
+func ensureEngineReady(w fyne.Window, onReady func(), onFailure func()) {
 	go func() {
 		ctx := context.Background()
 
-		// 1. Initialize SDK Client (Default standard attempt)
-		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-		if err == nil {
-			_, err = cli.Ping(ctx) // Test connection
-		}
-
-		// 1.5. Fallback for Docker Desktop on Linux!
-		if err != nil && runtime.GOOS == "linux" {
-			homeDir, _ := os.UserHomeDir()
-			desktopSock := "unix://" + filepath.Join(homeDir, ".docker", "desktop", "docker.sock")
-
-			fallbackCli, fallbackErr := client.NewClientWithOpts(
-				client.WithHost(desktopSock),
-				client.WithAPIVersionNegotiation(),
-			)
-			if fallbackErr == nil {
-				if _, pingErr := fallbackCli.Ping(ctx); pingErr == nil {
-					// Success! We found the hidden Docker Desktop socket
-					cli = fallbackCli
-					err = nil
-				}
-			}
-		}
-
-		// 2. If daemon is completely unreachable
+		socketURL, err := startPodmanService()
 		if err != nil {
-			_, pathErr := exec.LookPath("docker")
-			if pathErr != nil {
-				fyne.Do(func() {
-					dialog.ShowCustomConfirm("Docker Required", "Install Docker", "Quit App",
-						widget.NewLabel("Docker Desktop is not installed.\nAI Bazaar requires Docker Desktop to securely run AI models."),
-						func(install bool) {
-							if install {
-								u, _ := url.Parse("https://www.docker.com/products/docker-desktop/")
-								fyne.CurrentApp().OpenURL(u)
-							}
-							if onFailure != nil {
-								onFailure()
-							}
-							fyne.CurrentApp().Quit()
-						}, w)
-				})
-				return
-			}
-
-			writeLog("⚙️ Docker daemon offline. Waiting for user to start Docker Desktop...\n")
-
+			writeLog("❌ Podman service failed to start: %v\n", err)
 			fyne.Do(func() {
-				dialog.ShowCustomConfirm("Docker Engine Offline", "Retry Connection", "Quit App",
-					widget.NewLabel("Docker Desktop is currently not running.\n\n1. Please open Docker Desktop manually.\n2. Wait for the engine to fully load.\n3. Click 'Retry Connection' below."),
-					func(retry bool) {
-						if retry {
-							ensureDockerReady(w, onReady, onFailure)
-						} else {
-							if onFailure != nil {
-								onFailure()
-							}
-							fyne.CurrentApp().Quit()
+				description := widget.NewLabel("Podman not found. Please install via command below:")
+
+				distros := map[string]string{
+					"Ubuntu / Debian":      "sudo apt-get update && sudo apt-get -y install podman",
+					"Arch Linux & Manjaro": "sudo pacman -S podman",
+					"Fedora":               "sudo dnf -y install podman",
+					"Alpine Linux":         "sudo apk add podman",
+					"Raspberry Pi OS":      "sudo apt-get update && sudo apt-get -y install podman",
+					"RHEL":                 "sudo dnf install podman",
+				}
+
+				options := []string{
+					"Ubuntu / Debian",
+					"Arch Linux & Manjaro",
+					"Fedora",
+					"Alpine Linux",
+					"Raspberry Pi OS",
+					"RHEL",
+				}
+
+				commandLabel := canvas.NewText("Select your distribution...", color.RGBA{R: 34, G: 197, B: 94, A: 255})
+				commandLabel.TextStyle = fyne.TextStyle{Bold: true, Monospace: true}
+
+				bg := canvas.NewRectangle(color.RGBA{R: 24, G: 24, B: 27, A: 255})
+				bg.SetMinSize(fyne.NewSize(350, 36))
+
+				scrollContainer := fyneContainer.NewHScroll(commandLabel)
+				cmdContainer := fyneContainer.NewStack(bg, fyneContainer.NewPadded(scrollContainer))
+
+				var copyBtn *widget.Button
+				copyBtn = widget.NewButtonWithIcon("Copy", theme.ContentCopyIcon(), func() {
+					cmd := commandLabel.Text
+					if cmd != "" && cmd != "Select your distribution..." {
+						w.Clipboard().SetContent(cmd)
+						copyBtn.SetText("Copied!")
+						copyBtn.SetIcon(theme.ConfirmIcon())
+						copyBtn.Refresh()
+
+						go func() {
+							time.Sleep(1500 * time.Millisecond)
+							fyne.Do(func() {
+								copyBtn.SetText("Copy")
+								copyBtn.SetIcon(theme.ContentCopyIcon())
+								copyBtn.Refresh()
+							})
+						}()
+					}
+				})
+				copyBtn.Disable()
+
+				selectWidget := widget.NewSelect(options, func(selected string) {
+					if cmd, ok := distros[selected]; ok {
+						commandLabel.Text = cmd
+						commandLabel.Refresh()
+						copyBtn.Enable()
+					} else {
+						commandLabel.Text = ""
+						commandLabel.Refresh()
+						copyBtn.Disable()
+					}
+				})
+				selectWidget.PlaceHolder = "Select your Linux distribution..."
+				selectWidget.SetSelected("Ubuntu / Debian")
+
+				form := widget.NewForm(
+					widget.NewFormItem("Distribution", selectWidget),
+					widget.NewFormItem("Command", fyneContainer.NewBorder(nil, nil, nil, copyBtn, cmdContainer)),
+				)
+
+				dialogContent := fyneContainer.NewVBox(
+					description,
+					form,
+				)
+
+				dialog.ShowCustomConfirm("Podman Required", "Install Podman", "Quit App",
+					dialogContent,
+					func(install bool) {
+						if install {
+							u, _ := url.Parse("https://podman.io/docs/installation#linux-distributions")
+							fyne.CurrentApp().OpenURL(u)
 						}
+						if onFailure != nil {
+							onFailure()
+						}
+						fyne.CurrentApp().Quit()
 					}, w)
 			})
 			return
 		}
 
-		// 3. Success! Docker is running.
+		// Initialize Docker SDK Client (pointing to our Podman socket)
+		cli, err := client.NewClientWithOpts(
+			client.WithHost(socketURL),
+			client.WithAPIVersionNegotiation(),
+		)
+		if err != nil {
+			writeLog("❌ Failed to initialize client for Podman: %v\n", err)
+			if onFailure != nil {
+				fyne.Do(onFailure)
+			}
+			return
+		}
+
+		// Ping to ensure connection works
+		if _, pingErr := cli.Ping(ctx); pingErr != nil {
+			writeLog("❌ Failed to ping Podman socket: %v\n", pingErr)
+			if onFailure != nil {
+				fyne.Do(onFailure)
+			}
+			return
+		}
+
+		// Success! Podman is running.
 		processMutex.Lock()
 		dockerCli = cli // Save global reference
 		processMutex.Unlock()
-		writeLog("✅ Docker Engine is ready and connected.\n")
+		writeLog("✅ Podman Engine is ready and connected.\n")
 		if onReady != nil {
 			onReady()
 		}
@@ -583,6 +751,8 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 					CgroupPermissions: "rwm",
 				},
 			}
+			hostConfig.SecurityOpt = []string{"seccomp=unconfined"}
+			hostConfig.GroupAdd = []string{"video", "render"}
 		}
 	}
 
@@ -783,6 +953,8 @@ func startAppLocally(rawSlug string) error {
 					CgroupPermissions: "rwm",
 				},
 			}
+			hostConfig.SecurityOpt = []string{"seccomp=unconfined"}
+			hostConfig.GroupAdd = []string{"video", "render"}
 		}
 	}
 
@@ -1027,7 +1199,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 		if req.Action == "RUN" {
 			fyne.Do(func() {
-				ensureDockerReady(mainWindow, func() {
+				ensureEngineReady(mainWindow, func() {
 					go executeRunAction(req, conn)
 				}, nil)
 			})
@@ -1279,6 +1451,7 @@ func main() {
 
 		// Zero apps running/installing/starting/stopping/uninstalling. Clean exit!
 		writeLog("🛑 Shutting down daemon...\n")
+		cleanupPodmanService()
 		a.Quit()
 	})
 
@@ -1409,7 +1582,7 @@ func main() {
 					appIcon := item.Icon
 
 					installBtn := widget.NewButton("Install", func() {
-						ensureDockerReady(mainWindow, func() {
+						ensureEngineReady(mainWindow, func() {
 							if switchToInstalledTab != nil {
 								switchToInstalledTab()
 							}
@@ -1607,7 +1780,7 @@ func main() {
 							refreshInstalledApps()
 						}
 
-						ensureDockerReady(mainWindow, func() {
+						ensureEngineReady(mainWindow, func() {
 							err := startAppLocally(appSlug)
 							processMutex.Lock()
 							delete(startingApps, appSlug)
@@ -1710,11 +1883,22 @@ func main() {
 		}
 	})
 
+	btnOpenApps := widget.NewButtonWithIcon("Open Apps Directory", theme.FolderOpenIcon(), func() {
+		appsPath := filepath.Join(getBaseDir(), "core", "apps")
+		os.MkdirAll(appsPath, 0755)
+		u, err := url.Parse("file://" + filepath.ToSlash(appsPath))
+		if err == nil {
+			a.OpenURL(u)
+		}
+	})
+
+	buttonsBox := fyneContainer.NewPadded(fyneContainer.NewGridWithColumns(2, btnStore, btnOpenApps))
+
 	headerBox := fyneContainer.NewVBox(
 		logoUI,
 		fyneContainer.NewPadded(fyneContainer.NewCenter(lblTitle)),
 		fyneContainer.NewPadded(lblDesc),
-		fyneContainer.NewPadded(btnStore),
+		buttonsBox,
 		widget.NewSeparator(),
 	)
 
@@ -1744,7 +1928,7 @@ func main() {
 
 	// Pre-flight check on initial app startup
 	fyne.Do(func() {
-		ensureDockerReady(mainWindow, func() {
+		ensureEngineReady(mainWindow, func() {
 			if !startServer() {
 				d := dialog.NewInformation("Port Conflict", "Port 4500 is already in use.\n\nPlease close any other instances of AI Bazaar and try again.", mainWindow)
 				d.SetOnClosed(func() {

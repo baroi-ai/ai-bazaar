@@ -58,7 +58,14 @@ export default function DownloadEnginePage() {
             <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-blue-600 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
             <Monitor className="w-10 h-10 md:w-12 md:h-12 text-zinc-300 mb-4 md:mb-6 group-hover:text-blue-400 transition-colors" />
             <h2 className="text-xl md:text-2xl font-bold mb-2">Windows</h2>
-            <p className="text-zinc-500 text-xs md:text-sm mb-6 md:mb-8 flex-1">Windows 10 & 11 (64-bit)</p>
+            <p className="text-zinc-500 text-xs md:text-sm mb-4">Windows 10 & 11 (64-bit)</p>
+            
+            <div className="flex-1 flex flex-col justify-center mb-6">
+              <span className="inline-flex items-center gap-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full text-xs font-semibold">
+                <Box className="w-3.5 h-3.5" /> Docker Required
+              </span>
+            </div>
+
             <a
               href="https://github.com/baroi-ai/ai-bazaar/releases/download/Engine_4.0/AI-Bazaar-Windows-Installer-Setup.exe"
               className="w-full flex items-center justify-center gap-2 py-3 md:py-3.5 rounded-xl bg-zinc-100 hover:bg-white text-black font-bold transition-colors active:scale-95"
@@ -73,12 +80,19 @@ export default function DownloadEnginePage() {
               <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
             </svg>
             <h2 className="text-xl md:text-2xl font-bold mb-2 text-zinc-400">macOS</h2>
-            <p className="text-zinc-600 text-xs md:text-sm mb-6 md:mb-8 flex-1">Universal (Apple Silicon & Intel)</p>
+            <p className="text-zinc-600 text-xs md:text-sm mb-4">Universal (Apple Silicon & Intel)</p>
+            
+            <div className="flex-1 flex flex-col justify-center mb-6 opacity-0 select-none">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs">
+                Placeholder
+              </span>
+            </div>
+
             <button
               disabled
               className="w-full flex items-center justify-center gap-2 py-3 md:py-3.5 rounded-xl bg-zinc-800 text-zinc-500 font-bold cursor-not-allowed transition-colors"
             >
-               Coming Soon
+              Coming Soon
             </button>
           </div>
 
@@ -87,41 +101,22 @@ export default function DownloadEnginePage() {
             <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-amber-500 to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
             <TerminalSquare className="w-10 h-10 md:w-12 md:h-12 text-zinc-300 mb-4 md:mb-6 group-hover:text-amber-400 transition-colors" />
             <h2 className="text-xl md:text-2xl font-bold mb-2">Linux</h2>
-            <p className="text-zinc-500 text-xs md:text-sm mb-6 md:mb-8 flex-1">Ubuntu, Debian, Fedora (x64)</p>
+            <p className="text-zinc-500 text-xs md:text-sm mb-4">Ubuntu, Debian, Fedora (x64)</p>
+            
+            <div className="flex-1 flex flex-col justify-center mb-6">
+              <span className="inline-flex items-center gap-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full text-xs font-semibold">
+                <Box className="w-3.5 h-3.5" /> Podman Required
+              </span>
+            </div>
+
             <a
-              href="https://github.com/baroi-ai/ai-bazaar/releases/download/Engine_4.0/ai-bazaar-linux.zip"
+              href="https://github.com/baroi-ai/ai-bazaar/releases/download/Engine_5.0/ai-bazaar-engine-linux-podman.zip"
               className="w-full flex items-center justify-center gap-2 py-3 md:py-3.5 rounded-xl bg-zinc-100 hover:bg-white text-black font-bold transition-colors active:scale-95"
             >
               <Download className="w-4 h-4 md:w-5 md:h-5" /> Download
             </a>
           </div>
 
-        </section>
-
-        {/* Docker Requirement Notice */}
-        <section className="w-full max-w-5xl bg-blue-500/5 border border-blue-500/10 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 mb-4 mx-2">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-            <div className="w-14 h-14 rounded-2xl bg-[#0091e6]/10 border border-[#0091e6]/20 flex items-center justify-center shrink-0">
-              {/* Official Custom Docker SVG Logo */}
-              <svg viewBox="0 0 24 24" className="w-8 h-8 fill-[#0091e6]" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13.983 11.078h2.119c.102 0 .186-.083.186-.185V8.99c0-.102-.084-.186-.186-.186h-2.119c-.103 0-.186.084-.186.186v1.903c0 .102.083.185.186.185m-2.954 0h2.118c.103 0 .187-.083.187-.185V8.99c0-.102-.084-.186-.187-.186h-2.118c-.103 0-.186.084-.186.186v1.903c0 .102.083.185.186.185m-2.935 0h2.119c.102 0 .185-.083.185-.185V8.99c0-.102-.083-.186-.185-.186H8.094c-.102 0-.185.084-.185.186v1.903c0 .102.083.185.185.185m-2.936 0h2.12c.102 0 .185-.083.185-.185V8.99c0-.102-.083-.186-.185-.186h-2.12c-.102 0-.185.084-.185.186v1.903c0 .102.083.185.185.185m-2.955 0h2.119c.102 0 .185-.083.185-.185V8.99c0-.102-.083-.186-.185-.186H2.203c-.102 0-.185.084-.185.186v1.903c0 .102.083.185.185.185m2.955-2.738h2.119c.102 0 .185-.083.185-.186V6.251c0-.102-.083-.186-.185-.186H5.158c-.102 0-.185.084-.185.186v1.903c0 .103.083.186.185.186m2.936 0h2.119c.102 0 .185-.083.185-.186V6.251c0-.102-.083-.186-.185-.186H8.094c-.102 0-.185.084-.185.186v1.903c0 .103.083.186.185.186m2.954 0h2.119c.103 0 .187-.083.187-.186V6.251c0-.102-.084-.186-.187-.186h-2.119c-.103 0-.186.084-.186.186v1.903c0 .103.083.186.186.186m-5.89-2.747h2.119c.102 0 .185-.083.185-.186V3.504c0-.102-.083-.186-.185-.186H8.094c-.102 0-.185.084-.185.186v1.903c0 .103.083.186.185.186m15.89 4.31c-.198-.037-.417-.056-.631-.056-.65 0-1.286.223-1.854.638-.724-.65-1.633-1.021-2.613-1.021-.214 0-.427.019-.63.056-.056-.928-.446-1.81-1.114-2.496-.102-.102-.25-.111-.362-.02-.111.093-.139.242-.065.362.464.752.696 1.633.668 2.524-.835.139-1.577.603-2.096 1.28-.13-.037-.26-.055-.39-.055H1.412c-.436 0-.788.352-.788.788v7.054c0 .427.334.77.751.788.52.028 1.114.074 1.745.167 3.257.473 6.643.76 10.088.76 3.555 0 7.054-.306 10.375-.816.742-.112 1.411-.25 1.986-.418.427-.12.714-.501.714-.946V11.21c0-.445-.315-.835-.742-.918m-1.9 6.28c-.53.13-1.15.25-1.838.352-3.155.483-6.477.733-9.874.733-3.295 0-6.505-.241-9.587-.696-.492-.074-.956-.139-1.392-.204V11.95h16.353c.065 0 .12-.009.176-.028.427-.13.789-.418 1.012-.807.51-.872 1.43-1.392 2.441-1.392.176 0 .353.018.52.046v4.612c0 .13-.084.25-.223.297"/>
-              </svg>
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-base md:text-lg font-bold text-zinc-200">Docker Required</h3>
-              <p className="text-xs md:text-sm text-zinc-400 leading-relaxed max-w-2xl">
-                AI Bazaar Engine orchestrates models inside secure containers. You must install and run Docker Desktop on your machine before using the engine dashboard.
-              </p>
-            </div>
-          </div>
-          <a
-            href="https://www.docker.com/products/docker-desktop/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-sm font-bold transition-all shrink-0 active:scale-95"
-          >
-            Get Docker Desktop <ExternalLink className="w-4 h-4" />
-          </a>
         </section>
 
         {/* Mobile Not Supported Notice */}
