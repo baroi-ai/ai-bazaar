@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"image/color"
@@ -16,14 +16,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	// Docker SDK imports
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	dockerContainer "github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/docker/go-connections/nat"
 
 	// Fyne imports (Aliased container to fyneContainer to avoid conflicts)
 	"fyne.io/fyne/v2"
@@ -43,6 +35,8 @@ var upgrader = websocket.Upgrader{
 }
 
 const pbBaseURL = "https://api.aibazaars.store/"
+
+//const pbBaseURL = "http://127.0.0.1:8080"
 
 var pbClient = &http.Client{Timeout: 10 * time.Second}
 
@@ -99,9 +93,6 @@ var processMutex sync.Mutex
 var wsMutex sync.Mutex
 var mainWindow fyne.Window
 
-// Global Docker Client
-var dockerCli *client.Client
-
 // UI Controller Hooks
 var refreshInstalledApps func()
 var refreshExploreApps func()
@@ -150,27 +141,40 @@ func getAvailablePort(desiredPort string) string {
 }
 
 func detectGPUSupport() string {
-	// 1. Check for NVIDIA GPU
+	// Query GPU on Windows using wmic
+	cmd := exec.Command("wmic", "path", "win32_VideoController", "get", "name")
+	if output, err := cmd.Output(); err == nil {
+		outputStr := strings.ToLower(string(output))
+		if strings.Contains(outputStr, "nvidia") {
+			writeLog("🔍 [GPU Detection]: NVIDIA GPU detected via wmic.\n")
+			return "nvidia"
+		}
+		if strings.Contains(outputStr, "amd") || strings.Contains(outputStr, "radeon") {
+			writeLog("🔍 [GPU Detection]: AMD GPU detected via wmic.\n")
+			return "amd"
+		}
+		if strings.Contains(outputStr, "intel") || strings.Contains(outputStr, "arc") {
+			writeLog("🔍 [GPU Detection]: Intel GPU detected via wmic.\n")
+			return "intel"
+		}
+	}
+
+	// Fallback to nvidia-smi checks
 	if err := exec.Command("nvidia-smi").Run(); err == nil {
 		writeLog("🔍 [GPU Detection]: NVIDIA GPU detected via nvidia-smi.\n")
 		return "nvidia"
 	}
-	if dockerCli != nil {
-		if info, err := dockerCli.Info(context.Background()); err == nil {
-			if _, ok := info.Runtimes["nvidia"]; ok {
-				writeLog("🔍 [GPU Detection]: NVIDIA runtime detected in Docker.\n")
-				return "nvidia"
-			}
-		}
+	if err := exec.Command("nvidia-smi.exe").Run(); err == nil {
+		writeLog("🔍 [GPU Detection]: NVIDIA GPU detected via nvidia-smi.exe.\n")
+		return "nvidia"
 	}
 
-	// 2. Check for AMD GPU (Linux specific paths)
-	if runtime.GOOS == "linux" {
-		if _, err := os.Stat("/dev/kfd"); err == nil {
-			if _, err := os.Stat("/dev/dri"); err == nil {
-				writeLog("🔍 [GPU Detection]: AMD GPU detected via /dev/kfd and /dev/dri.\n")
-				return "amd"
-			}
+	// Check NVSMI default path
+	nvsmiPath := "C:\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe"
+	if _, err := os.Stat(nvsmiPath); err == nil {
+		if err := exec.Command(nvsmiPath).Run(); err == nil {
+			writeLog("🔍 [GPU Detection]: NVIDIA GPU detected via NVSMI path.\n")
+			return "nvidia"
 		}
 	}
 
@@ -178,48 +182,20 @@ func detectGPUSupport() string {
 	return "none"
 }
 
-// ---------------------------------------------------------
-// DOCKER LIFECYCLE MANAGEMENT (SDK)
-// ---------------------------------------------------------
-
-func ensureDockerReady(w fyne.Window, onReady func(), onFailure func()) {
+func ensureEngineReady(w fyne.Window, onReady func(), onFailure func()) {
 	go func() {
-		ctx := context.Background()
-
-		// 1. Initialize SDK Client (Default standard attempt)
-		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-		if err == nil {
-			_, err = cli.Ping(ctx) // Test connection
-		}
-
-		// 1.5. Fallback for Docker Desktop on Linux!
-		if err != nil && runtime.GOOS == "linux" {
-			homeDir, _ := os.UserHomeDir()
-			desktopSock := "unix://" + filepath.Join(homeDir, ".docker", "desktop", "docker.sock")
-
-			fallbackCli, fallbackErr := client.NewClientWithOpts(
-				client.WithHost(desktopSock),
-				client.WithAPIVersionNegotiation(),
-			)
-			if fallbackErr == nil {
-				if _, pingErr := fallbackCli.Ping(ctx); pingErr == nil {
-					// Success! We found the hidden Docker Desktop socket
-					cli = fallbackCli
-					err = nil
-				}
-			}
-		}
-
-		// 2. If daemon is completely unreachable
+		_, err := exec.LookPath("wslc")
 		if err != nil {
-			_, pathErr := exec.LookPath("docker")
-			if pathErr != nil {
+			cmd := exec.Command("wslc", "version")
+			if err := cmd.Run(); err != nil {
 				fyne.Do(func() {
-					dialog.ShowCustomConfirm("Docker Required", "Install Docker", "Quit App",
-						widget.NewLabel("Docker Desktop is not installed.\nAI Bazaar requires Docker Desktop to securely run AI models."),
+					description := widget.NewLabel("WSL Containers (wslc) is not installed.\nAI Bazaar requires WSL Containers to securely run AI models.\n\nPlease ensure you have the latest WSL pre-release version installed.")
+					
+					dialog.ShowCustomConfirm("WSL Containers Required", "Install/Update WSL", "Quit App",
+						description,
 						func(install bool) {
 							if install {
-								u, _ := url.Parse("https://www.docker.com/products/docker-desktop/")
+								u, _ := url.Parse("https://learn.microsoft.com/en-us/windows/wsl/install")
 								fyne.CurrentApp().OpenURL(u)
 							}
 							if onFailure != nil {
@@ -230,31 +206,9 @@ func ensureDockerReady(w fyne.Window, onReady func(), onFailure func()) {
 				})
 				return
 			}
-
-			writeLog("⚙️ Docker daemon offline. Waiting for user to start Docker Desktop...\n")
-
-			fyne.Do(func() {
-				dialog.ShowCustomConfirm("Docker Engine Offline", "Retry Connection", "Quit App",
-					widget.NewLabel("Docker Desktop is currently not running.\n\n1. Please open Docker Desktop manually.\n2. Wait for the engine to fully load.\n3. Click 'Retry Connection' below."),
-					func(retry bool) {
-						if retry {
-							ensureDockerReady(w, onReady, onFailure)
-						} else {
-							if onFailure != nil {
-								onFailure()
-							}
-							fyne.CurrentApp().Quit()
-						}
-					}, w)
-			})
-			return
 		}
 
-		// 3. Success! Docker is running.
-		processMutex.Lock()
-		dockerCli = cli // Save global reference
-		processMutex.Unlock()
-		writeLog("✅ Docker Engine is ready and connected.\n")
+		writeLog("✅ WSL Containers (wslc) is ready.\n")
 		if onReady != nil {
 			onReady()
 		}
@@ -262,9 +216,6 @@ func ensureDockerReady(w fyne.Window, onReady func(), onFailure func()) {
 }
 
 func stopDockerContainer(slug string) {
-	if dockerCli == nil {
-		return
-	}
 	containerName := "aibazaar-" + slug
 	writeLog("🛑 [STOP]: Stopping app %s...\n", slug)
 
@@ -275,17 +226,15 @@ func stopDockerContainer(slug string) {
 	}
 	processMutex.Unlock()
 
-	ctx := context.Background()
-	timeout := 10 // Give it 10 seconds to shut down gracefully
-
-	// SDK Call to stop
-	err := dockerCli.ContainerStop(ctx, containerName, container.StopOptions{Timeout: &timeout})
-	if err != nil {
-		writeLog("⚠️ [STOP]: App %s might already be stopped.\n", slug)
+	// Stop container
+	stopCmd := exec.Command("wslc", "stop", containerName)
+	if err := stopCmd.Run(); err != nil {
+		writeLog("⚠️ [STOP]: App %s might already be stopped: %v\n", slug, err)
 	}
 
-	// Also prune it to be clean
-	dockerCli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
+	// Remove container
+	rmCmd := exec.Command("wslc", "rm", "-f", containerName)
+	rmCmd.Run()
 
 	processMutex.Lock()
 	delete(activeContainers, slug)
@@ -406,7 +355,6 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	safeSlug := sanitizeSlug(req.Slug)
 	appFolder := getAppFolderPath(safeSlug)
 	containerName := "aibazaar-" + safeSlug
-	ctx := context.Background()
 
 	processMutex.Lock()
 	isRunning := activeContainers[safeSlug]
@@ -470,63 +418,31 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	}
 
 	// ==========================================
-	// PULL DOCKER IMAGE VIA SDK (With Progress)
+	// PULL WSL CONTAINER IMAGE
 	// ==========================================
-	writeLog("📥 Initiating Docker Image Pull for %s...\n", req.ImageLink)
-	writeWS(conn, "📥 SYSTEM: Pulling Docker Image... (This might take a few minutes)")
+	writeLog("📥 Initiating WSL Container Image Pull for %s...\n", req.ImageLink)
+	writeWS(conn, "📥 SYSTEM: Pulling WSL Container Image... (This might take a few minutes)")
 
-	reader, pullErr := dockerCli.ImagePull(ctx, req.ImageLink, types.ImagePullOptions{})
-	if pullErr != nil {
-		writeLog("❌ ERROR: Failed to pull image: %v\n", pullErr)
-		processMutex.Lock()
-		delete(installingApps, safeSlug)
-		processMutex.Unlock()
-		if refreshInstalledApps != nil {
-			fyne.Do(func() { refreshInstalledApps() })
-		}
-		return
-	}
-
-	// Decode JSON progress stream
-	dec := json.NewDecoder(reader)
-	type dockerPullMsg struct {
-		Status         string `json:"status"`
-		Id             string `json:"id"`
-		ProgressDetail struct {
-			Current int64 `json:"current"`
-			Total   int64 `json:"total"`
-		} `json:"progressDetail"`
-	}
-
-	var lastUpdate time.Time
-	for {
-		var msg dockerPullMsg
-		if err := dec.Decode(&msg); err == io.EOF {
-			break
-		} else if err != nil {
-			continue
-		}
-
-		// Throttle UI updates to prevent freezing (twice a second)
-		if time.Since(lastUpdate) > 500*time.Millisecond || msg.Status == "Download complete" || msg.Status == "Pull complete" {
-			progressStr := ""
-			if msg.ProgressDetail.Total > 0 {
-				mbCurrent := float64(msg.ProgressDetail.Current) / 1024 / 1024
-				mbTotal := float64(msg.ProgressDetail.Total) / 1024 / 1024
-				progressStr = fmt.Sprintf(" (%.1f MB / %.1f MB)", mbCurrent, mbTotal)
+	pullCmd := exec.Command("wslc", "pull", req.ImageLink)
+	pullStdout, pullErr := pullCmd.StdoutPipe()
+	if pullErr == nil {
+		pullCmd.Stderr = pullCmd.Stdout
+		if err := pullCmd.Start(); err == nil {
+			scanner := bufio.NewScanner(pullStdout)
+			for scanner.Scan() {
+				line := scanner.Text()
+				updateDockerPullLog("", line, "")
+				writeWS(conn, "🐳 [WSLC Pull]: "+line)
 			}
-			updateDockerPullLog(msg.Id, msg.Status, progressStr)
-
-			wsMsg := msg.Status
-			if msg.Id != "" {
-				wsMsg = msg.Id + ": " + msg.Status
-			}
-			wsMsg += progressStr
-			writeWS(conn, "🐳 [Docker Pull]: "+wsMsg)
-			lastUpdate = time.Now()
+			pullCmd.Wait()
+		} else {
+			writeLog("❌ ERROR: Failed to start image pull: %v\n", err)
+			writeWS(conn, "❌ ERROR: Failed to start image pull.")
 		}
+	} else {
+		writeLog("❌ ERROR: Failed to create stdout pipe: %v\n", pullErr)
+		writeWS(conn, "❌ ERROR: Failed to pull image.")
 	}
-	reader.Close()
 
 	processMutex.Lock()
 	delete(installingApps, safeSlug)
@@ -536,91 +452,53 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	}
 
 	// ==========================================
-	// RUN DOCKER CONTAINER VIA SDK
+	// RUN WSL CONTAINER
 	// ==========================================
 	writeLog("⚡ Launching App...\n")
 	writeWS(conn, "⚡ SYSTEM: Launching App...")
 
-	dockerCli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
+	// Remove previous container if it exists
+	exec.Command("wslc", "rm", "-f", containerName).Run()
 
 	internalPort := req.InternalPort
 	if internalPort == "" {
 		internalPort = targetPort
 	}
 
-	portBindings := nat.PortMap{
-		nat.Port(internalPort + "/tcp"): []nat.PortBinding{{HostIP: "127.0.0.1", HostPort: targetPort}},
-	}
-
-	var hostConfig dockerContainer.HostConfig
-	hostConfig.PortBindings = portBindings
-	hostConfig.AutoRemove = true
-
 	gpuType := "none"
 	if req.IsGPU {
 		gpuType = detectGPUSupport()
 	}
 
-	applyGPUConfig := func(gType string) {
-		hostConfig.Resources.DeviceRequests = nil
-		hostConfig.Resources.Devices = nil
-		if gType == "nvidia" {
-			hostConfig.Resources.DeviceRequests = []dockerContainer.DeviceRequest{
-				{
-					Driver:       "nvidia",
-					Count:        -1,
-					Capabilities: [][]string{{"gpu"}},
-				},
-			}
-		} else if gType == "amd" {
-			hostConfig.Resources.Devices = []dockerContainer.DeviceMapping{
-				{
-					PathOnHost:        "/dev/kfd",
-					PathInContainer:   "/dev/kfd",
-					CgroupPermissions: "rwm",
-				},
-				{
-					PathOnHost:        "/dev/dri",
-					PathInContainer:   "/dev/dri",
-					CgroupPermissions: "rwm",
-				},
-			}
+	runContainer := func(useGPU bool) bool {
+		args := []string{"run", "-d", "--name", containerName, "-p", "127.0.0.1:" + targetPort + ":" + internalPort, "-e", "PORT=" + internalPort}
+		if useGPU {
+			args = append(args, "--gpus", "all")
 		}
+		args = append(args, req.ImageLink)
+
+		runCmd := exec.Command("wslc", args...)
+		if err := runCmd.Run(); err != nil {
+			return false
+		}
+		return true
 	}
 
-	var resp dockerContainer.CreateResponse
-	var createErr error
-	var startErr error
 	launched := false
-
-	// Attempt GPU launch if requested and available
 	if req.IsGPU && gpuType != "none" {
 		writeLog("🔌 [GPU]: Attempting to launch in GPU mode (%s)...\n", gpuType)
 		writeWS(conn, fmt.Sprintf("🔌 SYSTEM: Attempting to launch in GPU mode (%s)...", gpuType))
-
-		applyGPUConfig(gpuType)
-		resp, createErr = dockerCli.ContainerCreate(ctx, &dockerContainer.Config{
-			Image: req.ImageLink,
-			Env:   []string{"PORT=" + internalPort},
-		}, &hostConfig, nil, nil, containerName)
-
-		if createErr == nil {
-			startErr = dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
-			if startErr == nil {
-				launched = true
-			} else {
-				writeLog("⚠️ [GPU]: Failed to start container in GPU mode: %v\n", startErr)
-				dockerCli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
-			}
+		if runContainer(true) {
+			launched = true
 		} else {
-			writeLog("⚠️ [GPU]: Failed to create container in GPU mode: %v\n", createErr)
+			writeLog("⚠️ [GPU]: Failed to launch container in GPU mode.\n")
+			writeWS(conn, "⚠️ SYSTEM: Failed to launch container in GPU mode.")
+			exec.Command("wslc", "rm", "-f", containerName).Run()
 		}
 	}
 
-	// Fallback to CPU mode if not launched
 	if !launched {
 		if req.IsGPU && !req.IsFallback {
-			// User requested GPU, it failed/wasn't found, and they don't want CPU fallback
 			writeLog("❌ ERROR: GPU mode failed, and CPU fallback is disabled.\n")
 			writeWS(conn, "❌ ERROR: GPU mode failed, and CPU fallback is disabled.")
 			return
@@ -634,22 +512,9 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 			writeWS(conn, "ℹ️ SYSTEM: Launching in CPU mode...")
 		}
 
-		applyGPUConfig("none")
-		resp, createErr = dockerCli.ContainerCreate(ctx, &dockerContainer.Config{
-			Image: req.ImageLink,
-			Env:   []string{"PORT=" + internalPort},
-		}, &hostConfig, nil, nil, containerName)
-
-		if createErr != nil {
-			writeLog("❌ ERROR: Failed to create App: %v\n", createErr)
-			writeWS(conn, "❌ ERROR: Failed to create App.")
-			return
-		}
-
-		startErr = dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
-		if startErr != nil {
-			writeLog("❌ ERROR: Failed to start App: %v\n", startErr)
-			writeWS(conn, "❌ ERROR: Failed to start App.")
+		if !runContainer(false) {
+			writeLog("❌ ERROR: Failed to start App in CPU mode.\n")
+			writeWS(conn, "❌ ERROR: Failed to start App in CPU mode.")
 			return
 		}
 	}
@@ -665,28 +530,29 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	writeWS(conn, fmt.Sprintf("🚀 ONLINE: Interface bound on http://127.0.0.1:%s", targetPort))
 
 	// Stream Logs back to UI
-	logReader, err := dockerCli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
-		ShowStdout: true,
-		ShowStderr: true,
-		Follow:     true,
-	})
-	if err == nil {
-		go func() {
-			outWriter := &UILogWriter{Prefix: "📦 [Out]:", Conn: conn}
-			errWriter := &UILogWriter{Prefix: "ℹ️ [Log]:", Conn: conn}
-			stdcopy.StdCopy(outWriter, errWriter, logReader)
-			logReader.Close()
-		}()
+	logCmd := exec.Command("wslc", "logs", "-f", containerName)
+	logStdout, logErr := logCmd.StdoutPipe()
+	if logErr == nil {
+		logCmd.Stderr = logCmd.Stdout
+		if err := logCmd.Start(); err == nil {
+			go func() {
+				defer logStdout.Close()
+				scanner := bufio.NewScanner(logStdout)
+				for scanner.Scan() {
+					line := scanner.Text()
+					writeLog("📦 [Out]: %s\n", line)
+					writeWS(conn, "📦 [Out]: "+line)
+				}
+				logCmd.Wait()
+			}()
+		}
 	}
 
-	// Wait for container to exit
-	statusCh, errCh := dockerCli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
-	select {
-	case err := <-errCh:
-		if err != nil {
-			writeLog("⚠️ SYSTEM: App exited with error: %v\n", err)
-		}
-	case <-statusCh:
+	// Wait for container to exit using wslc wait
+	waitCmd := exec.Command("wslc", "wait", containerName)
+	if err := waitCmd.Run(); err != nil {
+		writeLog("⚠️ SYSTEM: App exited: %v\n", err)
+	} else {
 		writeLog("💤 SYSTEM: App stopped cleanly.\n")
 		writeWS(conn, "💤 SYSTEM: App stopped cleanly.")
 	}
@@ -707,7 +573,6 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 func startAppLocally(rawSlug string) error {
 	slug := sanitizeSlug(rawSlug)
 	containerName := "aibazaar-" + slug
-	ctx := context.Background()
 
 	processMutex.Lock()
 	isRunning := activeContainers[slug]
@@ -741,82 +606,44 @@ func startAppLocally(rawSlug string) error {
 
 	writeLog("⚡ [LOCAL] Launching %s...\n", slug)
 
-	dockerCli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
+	// Remove previous container
+	exec.Command("wslc", "rm", "-f", containerName).Run()
 
 	internalPort := config.InternalPort
 	if internalPort == "" {
 		internalPort = targetPort
 	}
 
-	portBindings := nat.PortMap{
-		nat.Port(internalPort + "/tcp"): []nat.PortBinding{{HostIP: "127.0.0.1", HostPort: targetPort}},
-	}
-
-	var hostConfig dockerContainer.HostConfig
-	hostConfig.PortBindings = portBindings
-	hostConfig.AutoRemove = true
-
 	gpuType := "none"
 	if config.IsGPU {
 		gpuType = detectGPUSupport()
 	}
 
-	applyGPUConfig := func(gType string) {
-		hostConfig.Resources.DeviceRequests = nil
-		hostConfig.Resources.Devices = nil
-		if gType == "nvidia" {
-			hostConfig.Resources.DeviceRequests = []dockerContainer.DeviceRequest{
-				{
-					Driver:       "nvidia",
-					Count:        -1,
-					Capabilities: [][]string{{"gpu"}},
-				},
-			}
-		} else if gType == "amd" {
-			hostConfig.Resources.Devices = []dockerContainer.DeviceMapping{
-				{
-					PathOnHost:        "/dev/kfd",
-					PathInContainer:   "/dev/kfd",
-					CgroupPermissions: "rwm",
-				},
-				{
-					PathOnHost:        "/dev/dri",
-					PathInContainer:   "/dev/dri",
-					CgroupPermissions: "rwm",
-				},
-			}
+	runContainer := func(useGPU bool) bool {
+		args := []string{"run", "-d", "--name", containerName, "-p", "127.0.0.1:" + targetPort + ":" + internalPort, "-e", "PORT=" + internalPort}
+		if useGPU {
+			args = append(args, "--gpus", "all")
 		}
+		args = append(args, config.ImageLink)
+
+		runCmd := exec.Command("wslc", args...)
+		if err := runCmd.Run(); err != nil {
+			return false
+		}
+		return true
 	}
 
-	var resp dockerContainer.CreateResponse
-	var createErr error
-	var startErr error
 	launched := false
-
-	// Attempt GPU launch if requested and available
 	if config.IsGPU && gpuType != "none" {
 		writeLog("🔌 [GPU]: [LOCAL] Attempting to launch in GPU mode (%s)...\n", gpuType)
-
-		applyGPUConfig(gpuType)
-		resp, createErr = dockerCli.ContainerCreate(ctx, &dockerContainer.Config{
-			Image: config.ImageLink,
-			Env:   []string{"PORT=" + internalPort},
-		}, &hostConfig, nil, nil, containerName)
-
-		if createErr == nil {
-			startErr = dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
-			if startErr == nil {
-				launched = true
-			} else {
-				writeLog("⚠️ [GPU]: [LOCAL] Failed to start container in GPU mode: %v\n", startErr)
-				dockerCli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
-			}
+		if runContainer(true) {
+			launched = true
 		} else {
-			writeLog("⚠️ [GPU]: [LOCAL] Failed to create container in GPU mode: %v\n", createErr)
+			writeLog("⚠️ [GPU]: [LOCAL] Failed to launch container in GPU mode.\n")
+			exec.Command("wslc", "rm", "-f", containerName).Run()
 		}
 	}
 
-	// Fallback to CPU mode if not launched
 	if !launched {
 		if config.IsGPU && !config.IsFallback {
 			return fmt.Errorf("GPU mode failed, and CPU fallback is disabled")
@@ -828,19 +655,8 @@ func startAppLocally(rawSlug string) error {
 			writeLog("ℹ️ [LOCAL] Launching in CPU mode...\n")
 		}
 
-		applyGPUConfig("none")
-		resp, createErr = dockerCli.ContainerCreate(ctx, &dockerContainer.Config{
-			Image: config.ImageLink,
-			Env:   []string{"PORT=" + internalPort},
-		}, &hostConfig, nil, nil, containerName)
-
-		if createErr != nil {
-			return fmt.Errorf("failed to create app in CPU mode: %v", createErr)
-		}
-
-		startErr = dockerCli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
-		if startErr != nil {
-			return fmt.Errorf("failed to start app in CPU mode: %v", startErr)
+		if !runContainer(false) {
+			return fmt.Errorf("failed to start App in CPU mode")
 		}
 	}
 
@@ -850,22 +666,28 @@ func startAppLocally(rawSlug string) error {
 
 	writeLog("🚀 ONLINE: http://127.0.0.1:%s\n", targetPort)
 
-	logReader, err := dockerCli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
-		ShowStdout: true,
-		ShowStderr: true,
-		Follow:     true,
-	})
-	if err == nil {
-		go func() {
-			outWriter := &UILogWriter{Prefix: fmt.Sprintf("🐳 [%s]:", slug)}
-			stdcopy.StdCopy(outWriter, outWriter, logReader)
-			logReader.Close()
-		}()
+	// Stream Logs
+	logCmd := exec.Command("wslc", "logs", "-f", containerName)
+	logStdout, logErr := logCmd.StdoutPipe()
+	if logErr == nil {
+		logCmd.Stderr = logCmd.Stdout
+		if err := logCmd.Start(); err == nil {
+			go func() {
+				defer logStdout.Close()
+				outWriter := &UILogWriter{Prefix: fmt.Sprintf("🐳 [%s]:", slug)}
+				scanner := bufio.NewScanner(logStdout)
+				for scanner.Scan() {
+					line := scanner.Text()
+					outWriter.Write([]byte(line + "\n"))
+				}
+				logCmd.Wait()
+			}()
+		}
 	}
 
 	go func() {
-		statusCh, _ := dockerCli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
-		<-statusCh
+		waitCmd := exec.Command("wslc", "wait", containerName)
+		waitCmd.Run()
 		writeLog("💤 [%s]: Process finished.\n", slug)
 
 		processMutex.Lock()
@@ -877,6 +699,50 @@ func startAppLocally(rawSlug string) error {
 	}()
 
 	return nil
+}
+
+func uninstallApp(rawSlug string) {
+	slug := sanitizeSlug(rawSlug)
+
+	processMutex.Lock()
+	uninstallingApps[slug] = true
+	if refreshInstalledApps != nil {
+		fyne.Do(func() { refreshInstalledApps() })
+	}
+	processMutex.Unlock()
+
+	// 1. Stop container cleanly first
+	stopDockerContainer(slug)
+
+	targetDir := getAppFolderPath(slug)
+	configPath := filepath.Join(targetDir, ".bazaar")
+
+	// 2. Remove Image
+	if configData, err := os.ReadFile(configPath); err == nil {
+		var config BazaarConfig
+		if json.Unmarshal(configData, &config) == nil && config.ImageLink != "" {
+			writeLog("🗑️ Removing WSL Container Image: %s...\n", config.ImageLink)
+			rmiCmd := exec.Command("wslc", "rmi", "-f", config.ImageLink)
+			if err := rmiCmd.Run(); err != nil {
+				writeLog("⚠️ Could not remove image (it may be in use): %v\n", err)
+			}
+		}
+	}
+
+	// 3. Clear local files
+	os.RemoveAll(targetDir)
+	writeLog("🗑️ [DELETE]: Uninstalled %s from local storage.\n", slug)
+
+	processMutex.Lock()
+	delete(uninstallingApps, slug)
+	processMutex.Unlock()
+
+	if refreshInstalledApps != nil {
+		fyne.Do(func() { refreshInstalledApps() })
+	}
+	if refreshExploreApps != nil {
+		fyne.Do(func() { refreshExploreApps() })
+	}
 }
 
 func getInstalledApps() []string {
@@ -908,51 +774,6 @@ func getInstalledApps() []string {
 	processMutex.Unlock()
 
 	return apps
-}
-
-func uninstallApp(rawSlug string) {
-	slug := sanitizeSlug(rawSlug)
-	ctx := context.Background()
-
-	processMutex.Lock()
-	uninstallingApps[slug] = true
-	if refreshInstalledApps != nil {
-		fyne.Do(func() { refreshInstalledApps() })
-	}
-	processMutex.Unlock()
-
-	// 1. Stop container cleanly first
-	stopDockerContainer(slug)
-
-	targetDir := getAppFolderPath(slug)
-	configPath := filepath.Join(targetDir, ".bazaar")
-
-	// 2. Remove Docker Image via SDK
-	if configData, err := os.ReadFile(configPath); err == nil {
-		var config BazaarConfig
-		if json.Unmarshal(configData, &config) == nil && config.ImageLink != "" && dockerCli != nil {
-			writeLog("🗑️ Removing Docker Image: %s...\n", config.ImageLink)
-			_, err := dockerCli.ImageRemove(ctx, config.ImageLink, types.ImageRemoveOptions{Force: true})
-			if err != nil {
-				writeLog("⚠️ Could not remove image (it may be in use): %v\n", err)
-			}
-		}
-	}
-
-	// 3. Clear local files
-	os.RemoveAll(targetDir)
-	writeLog("🗑️ [DELETE]: Uninstalled %s from local storage.\n", slug)
-
-	processMutex.Lock()
-	delete(uninstallingApps, slug)
-	processMutex.Unlock()
-
-	if refreshInstalledApps != nil {
-		fyne.Do(func() { refreshInstalledApps() })
-	}
-	if refreshExploreApps != nil {
-		fyne.Do(func() { refreshExploreApps() })
-	}
 }
 
 func handleCheck(w http.ResponseWriter, r *http.Request) {
@@ -1029,7 +850,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 		if req.Action == "RUN" {
 			fyne.Do(func() {
-				ensureDockerReady(mainWindow, func() {
+				ensureEngineReady(mainWindow, func() {
 					go executeRunAction(req, conn)
 				}, nil)
 			})
@@ -1411,7 +1232,7 @@ func main() {
 					appIcon := item.Icon
 
 					installBtn := widget.NewButton("Install", func() {
-						ensureDockerReady(mainWindow, func() {
+						ensureEngineReady(mainWindow, func() {
 							if switchToInstalledTab != nil {
 								switchToInstalledTab()
 							}
@@ -1609,7 +1430,7 @@ func main() {
 							refreshInstalledApps()
 						}
 
-						ensureDockerReady(mainWindow, func() {
+						ensureEngineReady(mainWindow, func() {
 							err := startAppLocally(appSlug)
 							processMutex.Lock()
 							delete(startingApps, appSlug)
@@ -1712,11 +1533,22 @@ func main() {
 		}
 	})
 
+	btnOpenApps := widget.NewButtonWithIcon("Open Apps Directory", theme.FolderOpenIcon(), func() {
+		appsPath := filepath.Join(getBaseDir(), "core", "apps")
+		os.MkdirAll(appsPath, 0755)
+		u, err := url.Parse("file://" + filepath.ToSlash(appsPath))
+		if err == nil {
+			a.OpenURL(u)
+		}
+	})
+
+	buttonsBox := fyneContainer.NewPadded(fyneContainer.NewGridWithColumns(2, btnStore, btnOpenApps))
+
 	headerBox := fyneContainer.NewVBox(
 		logoUI,
 		fyneContainer.NewPadded(fyneContainer.NewCenter(lblTitle)),
 		fyneContainer.NewPadded(lblDesc),
-		fyneContainer.NewPadded(btnStore),
+		buttonsBox,
 		widget.NewSeparator(),
 	)
 
@@ -1746,7 +1578,7 @@ func main() {
 
 	// Pre-flight check on initial app startup
 	fyne.Do(func() {
-		ensureDockerReady(mainWindow, func() {
+		ensureEngineReady(mainWindow, func() {
 			if !startServer() {
 				d := dialog.NewInformation("Port Conflict", "Port 4500 is already in use.\n\nPlease close any other instances of AI Bazaar and try again.", mainWindow)
 				d.SetOnClosed(func() {
