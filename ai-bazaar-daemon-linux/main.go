@@ -43,9 +43,9 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-//const pbBaseURL = "https://api.aibazaars.store/"
+const pbBaseURL = "https://api.aibazaars.store/"
 
-const pbBaseURL = "http://127.0.0.1:8080"
+//const pbBaseURL = "http://127.0.0.1:8080"
 
 var pbClient = &http.Client{Timeout: 10 * time.Second}
 
@@ -182,47 +182,15 @@ func detectGPUSupport() string {
 	return "none"
 }
 
-func findPodmanPath() (string, error) {
-	baseDir := getBaseDir()
-
-	// Ensure the bin/ directory exists
-	binDir := filepath.Join(baseDir, "bin")
-	os.MkdirAll(binDir, 0755)
-
-	// Check local bin paths
-	localPaths := []string{
-		filepath.Join(binDir, "podman.AppImage"),
-		filepath.Join(binDir, "podman.Appimage"),
-		filepath.Join(binDir, "podman"),
-	}
-
-	for _, localPath := range localPaths {
-		if _, err := os.Stat(localPath); err == nil {
-			// Make sure it is executable
-			if err := os.Chmod(localPath, 0755); err != nil {
-				writeLog("⚠️ Failed to set executable permissions on %s: %v\n", localPath, err)
-			}
-			return localPath, nil
-		}
-	}
-
-	// Fallback to system-wide podman
-	if sysPath, err := exec.LookPath("podman"); err == nil {
-		return sysPath, nil
-	}
-
-	return "", fmt.Errorf("podman executable not found in local bin directory or system PATH")
-}
-
 func startPodmanService() (string, error) {
 	// If it's already running, return the socket path
 	if podmanCmd != nil && podmanCmd.Process != nil {
 		return "unix://" + podmanSocketPath, nil
 	}
 
-	podmanPath, err := findPodmanPath()
+	podmanPath, err := exec.LookPath("podman")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("podman is not installed on this system: %w", err)
 	}
 
 	// Create a unique socket path for this run
