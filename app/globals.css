@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@source not "../ai-bazaar-daemon-linux";
+@source not "../ai-bazaar-daemon-windows";
+@source not "../pocketbase";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 

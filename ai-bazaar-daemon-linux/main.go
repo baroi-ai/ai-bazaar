@@ -43,9 +43,10 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-const pbBaseURL = "https://api.aibazaars.store/"
+// const pbBaseURL = "https://api.aibazaars.store/"
+const appVersion = "0.1.0"
 
-//const pbBaseURL = "http://127.0.0.1:8080"
+const pbBaseURL = "http://127.0.0.1:8080"
 
 var pbClient = &http.Client{Timeout: 10 * time.Second}
 
@@ -95,12 +96,15 @@ type PBApp struct {
 
 var activeContainers = make(map[string]bool) // slug -> is running
 var installingApps = make(map[string]bool)
+var installingCancelFuncs = make(map[string]context.CancelFunc)
+var cancelingApps = make(map[string]bool)
 var startingApps = make(map[string]bool)
 var stoppingApps = make(map[string]bool)
 var uninstallingApps = make(map[string]bool)
 var processMutex sync.Mutex
 var wsMutex sync.Mutex
 var mainWindow fyne.Window
+var latestAvailableVersion string
 
 // Global Docker Client
 var dockerCli *client.Client
@@ -540,7 +544,19 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	safeSlug := sanitizeSlug(req.Slug)
 	appFolder := getAppFolderPath(safeSlug)
 	containerName := "aibazaar-" + safeSlug
-	ctx := context.Background()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	processMutex.Lock()
+	installingCancelFuncs[safeSlug] = cancel
+	processMutex.Unlock()
+
+	defer func() {
+		cancel()
+		processMutex.Lock()
+		delete(installingCancelFuncs, safeSlug)
+		delete(cancelingApps, safeSlug)
+		processMutex.Unlock()
+	}()
 
 	processMutex.Lock()
 	isRunning := activeContainers[safeSlug]
@@ -612,11 +628,18 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	reader, pullErr := dockerCli.ImagePull(ctx, req.ImageLink, types.ImagePullOptions{})
 	if pullErr != nil {
 		writeLog("❌ ERROR: Failed to pull image: %v\n", pullErr)
+		os.RemoveAll(appFolder)
+
 		processMutex.Lock()
+		delete(installingCancelFuncs, safeSlug)
+		delete(cancelingApps, safeSlug)
 		delete(installingApps, safeSlug)
 		processMutex.Unlock()
 		if refreshInstalledApps != nil {
 			fyne.Do(func() { refreshInstalledApps() })
+		}
+		if refreshExploreApps != nil {
+			fyne.Do(func() { refreshExploreApps() })
 		}
 		return
 	}
@@ -635,10 +658,8 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	var lastUpdate time.Time
 	for {
 		var msg dockerPullMsg
-		if err := dec.Decode(&msg); err == io.EOF {
+		if err := dec.Decode(&msg); err != nil {
 			break
-		} else if err != nil {
-			continue
 		}
 
 		// Throttle UI updates to prevent freezing (twice a second)
@@ -662,11 +683,34 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	}
 	reader.Close()
 
+	if ctx.Err() != nil {
+		writeLog("❌ ERROR: Pull cancelled: %v\n", ctx.Err())
+		os.RemoveAll(appFolder)
+
+		processMutex.Lock()
+		delete(installingCancelFuncs, safeSlug)
+		delete(cancelingApps, safeSlug)
+		delete(installingApps, safeSlug)
+		processMutex.Unlock()
+		if refreshInstalledApps != nil {
+			fyne.Do(func() { refreshInstalledApps() })
+		}
+		if refreshExploreApps != nil {
+			fyne.Do(func() { refreshExploreApps() })
+		}
+		return
+	}
+
 	processMutex.Lock()
+	delete(installingCancelFuncs, safeSlug)
+	delete(cancelingApps, safeSlug)
 	delete(installingApps, safeSlug)
 	processMutex.Unlock()
 	if refreshInstalledApps != nil {
 		fyne.Do(func() { refreshInstalledApps() })
+	}
+	if refreshExploreApps != nil {
+		fyne.Do(func() { refreshExploreApps() })
 	}
 
 	// ==========================================
@@ -1053,6 +1097,11 @@ func uninstallApp(rawSlug string) {
 	ctx := context.Background()
 
 	processMutex.Lock()
+	if activeContainers[slug] {
+		processMutex.Unlock()
+		writeLog("⚠️ Cannot uninstall %s: App is currently running. Please stop it first.\n", slug)
+		return
+	}
 	uninstallingApps[slug] = true
 	if refreshInstalledApps != nil {
 		fyne.Do(func() { refreshInstalledApps() })
@@ -1090,6 +1139,65 @@ func uninstallApp(rawSlug string) {
 	}
 	if refreshExploreApps != nil {
 		fyne.Do(func() { refreshExploreApps() })
+	}
+}
+
+func cancelInstallation(rawSlug string) {
+	slug := sanitizeSlug(rawSlug)
+	processMutex.Lock()
+	cancel, exists := installingCancelFuncs[slug]
+	processMutex.Unlock()
+
+	if exists && cancel != nil {
+		writeLog("🛑 [CANCEL]: Requesting cancellation of installation for %s...\n", slug)
+		cancel()
+	}
+}
+
+func checkForUpdates(lblUpdateInfo *widget.Label, banner *fyne.Container) {
+	resp, err := pbClient.Get("https://aibazaars.store/version")
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	rawVersion := strings.TrimSpace(string(bodyBytes))
+	if rawVersion == "" {
+		return
+	}
+
+	cleanVersion := func(v string) string {
+		v = strings.TrimSpace(v)
+		v = strings.TrimPrefix(v, ">")
+		v = strings.TrimSpace(v)
+		v = strings.TrimPrefix(v, "v")
+		v = strings.TrimSpace(v)
+		return v
+	}
+
+	cleanedLatest := cleanVersion(rawVersion)
+	cleanedCurrent := cleanVersion(appVersion)
+
+	if cleanedLatest != cleanedCurrent {
+		// Check if dismissed
+		dismissedPath := filepath.Join(getBaseDir(), ".dismissed_version")
+		if data, err := os.ReadFile(dismissedPath); err == nil {
+			if strings.TrimSpace(string(data)) == rawVersion {
+				return
+			}
+		}
+
+		latestAvailableVersion = rawVersion
+
+		fyne.Do(func() {
+			lblUpdateInfo.SetText(fmt.Sprintf("🎉 A new update (%s) is available!", rawVersion))
+			banner.Show()
+		})
 	}
 }
 
@@ -1590,7 +1698,14 @@ func main() {
 						}, nil)
 					})
 
-					card := fyneContainer.NewBorder(nil, nil, fyneContainer.NewPadded(img), fyneContainer.NewPadded(installBtn), textCol)
+					infoBtn := widget.NewButtonWithIcon("", theme.InfoIcon(), func() {
+						if u, err := url.Parse("https://aibazaars.store/apps/" + appSlug); err == nil {
+							a.OpenURL(u)
+						}
+					})
+
+					rightBox := fyneContainer.NewHBox(infoBtn, installBtn)
+					card := fyneContainer.NewBorder(nil, nil, fyneContainer.NewPadded(img), fyneContainer.NewPadded(rightBox), textCol)
 					newObjects = append(newObjects, fyneContainer.NewPadded(card), widget.NewSeparator())
 				}
 				fyne.Do(func() {
@@ -1725,7 +1840,26 @@ func main() {
 					workingText = "Uninstalling..."
 				}
 
-				if isInstalling || isStarting || isStopping || isUninstalling {
+				if isInstalling {
+					processMutex.Lock()
+					isCanceling := cancelingApps[appSlug]
+					processMutex.Unlock()
+
+					if isCanceling {
+						actionBtn = widget.NewButton("Canceling...", func() {})
+						actionBtn.Disable()
+					} else {
+						actionBtn = widget.NewButton("Cancel", func() {
+							processMutex.Lock()
+							cancelingApps[appSlug] = true
+							processMutex.Unlock()
+							if refreshInstalledApps != nil {
+								refreshInstalledApps()
+							}
+							cancelInstallation(appSlug)
+						})
+					}
+				} else if isStarting || isStopping || isUninstalling {
 					actionBtn = widget.NewButton(workingText, func() {})
 					actionBtn.Disable()
 				} else if isRunning {
@@ -1793,7 +1927,7 @@ func main() {
 					})
 
 					if isRunning {
-						btnBox = fyneContainer.NewHBox(openBtn, actionBtn, delBtn)
+						btnBox = fyneContainer.NewHBox(openBtn, actionBtn)
 					} else {
 						btnBox = fyneContainer.NewHBox(actionBtn, delBtn)
 					}
@@ -1838,6 +1972,38 @@ func main() {
 	lblTitle.TextStyle = fyne.TextStyle{Bold: true}
 	lblTitle.Alignment = fyne.TextAlignCenter
 
+	lblVersion := canvas.NewText(fmt.Sprintf("Version v%s", appVersion), color.RGBA{150, 150, 150, 255})
+	lblVersion.TextSize = 12
+	lblVersion.Alignment = fyne.TextAlignCenter
+
+	lblUpdateInfo := widget.NewLabel("")
+	lblUpdateInfo.TextStyle = fyne.TextStyle{Bold: true}
+
+	var updateBanner *fyne.Container
+
+	btnDownload := widget.NewButtonWithIcon("Download Update", theme.DownloadIcon(), func() {
+		if u, err := url.Parse("https://aibazaars.store/download"); err == nil {
+			a.OpenURL(u)
+		}
+	})
+
+	btnDismiss := widget.NewButtonWithIcon("Dismiss", theme.CancelIcon(), func() {
+		if latestAvailableVersion != "" {
+			dismissedPath := filepath.Join(getBaseDir(), ".dismissed_version")
+			os.WriteFile(dismissedPath, []byte(latestAvailableVersion), 0644)
+		}
+		if updateBanner != nil {
+			updateBanner.Hide()
+		}
+	})
+
+	updateBanner = fyneContainer.NewVBox(
+		fyneContainer.NewCenter(lblUpdateInfo),
+		fyneContainer.NewCenter(fyneContainer.NewHBox(btnDownload, btnDismiss)),
+		widget.NewSeparator(),
+	)
+	updateBanner.Hide() // Hidden by default
+
 	lblDesc := widget.NewLabelWithStyle(
 		"The lightweight bridge for securely executing AI models.\nPowered by AI Bazaar Engine.\nListening on Port 4500.",
 		fyne.TextAlignCenter,
@@ -1865,6 +2031,8 @@ func main() {
 	headerBox := fyneContainer.NewVBox(
 		logoUI,
 		fyneContainer.NewPadded(fyneContainer.NewCenter(lblTitle)),
+		fyneContainer.NewCenter(lblVersion),
+		updateBanner,
 		fyneContainer.NewPadded(lblDesc),
 		buttonsBox,
 		widget.NewSeparator(),
@@ -1903,6 +2071,8 @@ func main() {
 					a.Quit()
 				})
 				d.Show()
+			} else {
+				go checkForUpdates(lblUpdateInfo, updateBanner)
 			}
 		}, nil)
 	})
