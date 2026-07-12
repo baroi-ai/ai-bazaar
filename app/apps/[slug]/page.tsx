@@ -119,7 +119,7 @@ export default async function AppListingPage({ params }: Props) {
     : appData.platforms ? [appData.platforms] : [];
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-gray-100 font-sans flex flex-col">
+    <main className="min-h-screen bg-transparent text-gray-100 font-sans flex flex-col">
       <PlatformWarningModal platforms={platformsArray} />
       <Navbar />
 

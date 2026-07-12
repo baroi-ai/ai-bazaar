@@ -95,9 +95,18 @@ export default function RootLayout({
           data-website-id="b775028b-e753-4f70-89b1-705ca339fd7e"
         />
       </head>
-      <body className={`${inter.className} bg-[#0a0a0a] text-gray-100 antialiased overflow-x-hidden`}>
+      <body className={`${inter.className} bg-[#050508] text-gray-100 antialiased overflow-x-hidden`}>
+        {/* Global Fixed Background (Spotlights & Dot Mesh) */}
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+          <div className="absolute inset-0 dot-grid opacity-30"></div>
+          <div className="absolute top-1/4 left-1/4 w-[400px] md:w-[600px] h-[400px] md:h-[600px] bg-blue-600/10 rounded-full blur-[130px] animate-glow-1"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-sky-500/10 rounded-full blur-[110px] animate-glow-2"></div>
+        </div>
+
         {/* Main Page Content */}
-        {children}
+        <div className="relative z-10 min-h-screen flex flex-col bg-transparent">
+          {children}
+        </div>
 
         {/* Global UI Overlays */}
         <CookieBanner />

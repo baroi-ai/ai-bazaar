@@ -8,7 +8,6 @@ require (
 	fyne.io/fyne/v2 v2.7.4
 	github.com/docker/docker v26.1.5+incompatible
 	github.com/docker/go-connections v0.5.0
-	github.com/gorilla/websocket v1.5.3
 )
 
 require (

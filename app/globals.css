@@ -131,3 +131,29 @@
     @apply font-sans;
   }
 }
+
+/* Global Roaming Spotlight & dot-grid effects */
+main.min-h-screen {
+  background-color: transparent !important;
+}
+.dot-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.animate-glow-1 {
+  animation: float-glow-1 25s infinite ease-in-out;
+}
+.animate-glow-2 {
+  animation: float-glow-2 30s infinite ease-in-out;
+}
+@keyframes float-glow-1 {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -60px) scale(1.1); }
+  66% { transform: translate(-30px, 30px) scale(0.95); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+@keyframes float-glow-2 {
+  0% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(-50px, 50px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}

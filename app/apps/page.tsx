@@ -14,6 +14,7 @@ export const pb = new PocketBase(POCKETBASE_URL);
 const COMPUTE_TYPES = ["All", "Local", "Cloud"];
 const PRICING_TYPES = ["All", "Free", "Paid"];
 const PLATFORM_TYPES = ["All", "Web", "Windows", "Mac OS", "Linux", "Android", "IOS"];
+const EXECUTION_TYPES = ["All", "Browser Based", "Downloadable", "Engine Required"];
 const SORT_OPTIONS = ["Recently Released", "Recently Updated", "Price: Low to High", "Price: High to Low"];
 const ITEMS_PER_PAGE = 12;
 
@@ -49,6 +50,51 @@ const getTaskIcon = (taskName: string) => {
   return <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25z" /></svg>;
 };
 
+// Helper for relevance scoring when searching
+const getRelevanceScore = (record: any, query: string) => {
+  const q = query.toLowerCase().trim();
+  if (!q) return 0;
+
+  const name = (record.Name || "").toLowerCase();
+  const shortDesc = (record.shortDescription || "").toLowerCase();
+  
+  // Extract category names if expanded
+  const expandedCats = record.expand?.categoies;
+  const categories: string[] = Array.isArray(expandedCats)
+    ? expandedCats.map((c: any) => (c.Name || c.name || "").toLowerCase())
+    : [];
+
+  let score = 0;
+
+  // 1. Name Match (First priority)
+  if (name === q) {
+    score += 10000;
+  } else if (name.startsWith(q)) {
+    score += 8000;
+  } else if (name.includes(q)) {
+    score += 5000;
+  }
+
+  // 2. Short Description Match (Second priority)
+  if (shortDesc.includes(q)) {
+    score += 1000;
+    if (shortDesc.startsWith(q)) {
+      score += 200;
+    }
+  }
+
+  // 3. Category Match (Third priority)
+  for (const cat of categories) {
+    if (cat === q) {
+      score += 100;
+    } else if (cat.includes(q)) {
+      score += 50;
+    }
+  }
+
+  return score;
+};
+
 export default function RepositoryPage() {
   const [categories, setCategories] = useState<any[]>([]); 
   const [models, setModels] = useState<any[]>([]);
@@ -63,9 +109,11 @@ export default function RepositoryPage() {
   const [activeCompute, setActiveCompute] = useState("All");
   const [activePricing, setActivePricing] = useState("All");
   const [activePlatform, setActivePlatform] = useState("All");
+  const [activeExecutionType, setActiveExecutionType] = useState("All");
   const [activeSort, setActiveSort] = useState("Recently Released");
   
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
@@ -84,7 +132,7 @@ export default function RepositoryPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch, activeCategoryId, activeCompute, activePricing, activePlatform, activeSort]);
+  }, [debouncedSearch, activeCategoryId, activeCompute, activePricing, activePlatform, activeSort, activeExecutionType]);
 
   useEffect(() => {
     async function fetchCategories() {
@@ -115,7 +163,10 @@ export default function RepositoryPage() {
         let filterArr = [];
         
         if (debouncedSearch) {
-          filterArr.push(`(Name ~ "${debouncedSearch}" || author ~ "${debouncedSearch}")`);
+          const escapedSearch = debouncedSearch.replace(/"/g, '\\"');
+          filterArr.push(
+            `(Name ~ "${escapedSearch}" || author ~ "${escapedSearch}" || shortDescription ~ "${escapedSearch}" || categoies.name ~ "${escapedSearch}")`
+          );
         }
         
         if (activeCategoryId !== "all") {
@@ -134,6 +185,19 @@ export default function RepositoryPage() {
           filterArr.push(`platforms ~ "${activePlatform}"`);
         }
         
+        if (activeExecutionType !== "All") {
+          let typeVal = "";
+          if (activeExecutionType === "Browser Based") typeVal = "web_app";
+          else if (activeExecutionType === "Downloadable") typeVal = "native_binary";
+          else if (activeExecutionType === "Engine Required") typeVal = "daemon_uv";
+          
+          if (typeVal === "daemon_uv") {
+            filterArr.push(`(execution_type = "daemon_uv" || execution_type = "daemon")`);
+          } else {
+            filterArr.push(`execution_type = "${typeVal}"`);
+          }
+        }
+        
         const filterString = filterArr.join(" && ");
 
         let sortString = "-created";
@@ -142,14 +206,46 @@ export default function RepositoryPage() {
         else if (activeSort === "Price: Low to High") sortString = "coin";
         else if (activeSort === "Price: High to Low") sortString = "-coin";
 
-        const res = await pb.collection("apps").getList(currentPage, ITEMS_PER_PAGE, {
-          filter: filterString,
-          sort: sortString,
-          expand: 'categoies', 
-          requestKey: null
-        });
+        let recordsList: any[] = [];
+        let totalItemsCount = 0;
+        let totalPagesCount = 1;
 
-        const formattedModels = res.items.map((record) => {
+        if (debouncedSearch) {
+          // If searching, fetch all matching records to sort them by relevance client-side
+          const allMatches = await pb.collection("apps").getFullList({
+            filter: filterString,
+            expand: 'categoies',
+            requestKey: null
+          });
+
+          // Sort by relevance score descending
+          const scoredMatches = allMatches.map(record => ({
+            record,
+            score: getRelevanceScore(record, debouncedSearch)
+          }));
+          scoredMatches.sort((a, b) => b.score - a.score);
+
+          const sortedRecords = scoredMatches.map(x => x.record);
+          totalItemsCount = sortedRecords.length;
+          totalPagesCount = Math.max(1, Math.ceil(totalItemsCount / ITEMS_PER_PAGE));
+
+          // Slice the page client-side
+          const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+          recordsList = sortedRecords.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+        } else {
+          // Normal paginated fetching
+          const res = await pb.collection("apps").getList(currentPage, ITEMS_PER_PAGE, {
+            filter: filterString,
+            sort: sortString,
+            expand: 'categoies',
+            requestKey: null
+          });
+          recordsList = res.items;
+          totalItemsCount = res.totalItems;
+          totalPagesCount = res.totalPages;
+        }
+
+        const formattedModels = recordsList.map((record) => {
           const expandedCats = record.expand?.categoies;
           const categoryName = expandedCats && expandedCats.length > 0 
             ? (expandedCats[0].Name || expandedCats[0].name) 
@@ -168,13 +264,14 @@ export default function RepositoryPage() {
             updated: timeAgo(record.updated),
             size: record.size,
             description: record.shortDescription || "Experience powerful AI capabilities.",
-            sourceUrl: record.source_url || ""
+            sourceUrl: record.source_url || "",
+            executionType: record.execution_type || ""
           };
         });
 
         setModels(formattedModels);
-        setTotalPages(res.totalPages);
-        setTotalItems(res.totalItems);
+        setTotalPages(totalPagesCount);
+        setTotalItems(totalItemsCount);
 
       } catch (error: any) {
         if (!error.isAbort) {
@@ -186,10 +283,10 @@ export default function RepositoryPage() {
     }
 
     fetchModels();
-  }, [currentPage, debouncedSearch, activeCategoryId, activeCompute, activePricing, activePlatform, activeSort]);
+  }, [currentPage, debouncedSearch, activeCategoryId, activeCompute, activePricing, activePlatform, activeSort, activeExecutionType]);
 
   return (
-    <main className="min-h-screen bg-[#050508] text-gray-100 font-sans flex flex-col">
+    <main className="min-h-screen bg-transparent text-gray-100 font-sans flex flex-col">
       <Navbar />
 
       <div className="flex-grow w-full max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 py-6 flex flex-col md:flex-row gap-8 pb-24 md:pb-12">
@@ -210,7 +307,7 @@ export default function RepositoryPage() {
             <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">Categories</h2
             >
             <div className="flex flex-wrap gap-2">
-              {categories.map(cat => (
+              {categories.slice(0, showAllCategories ? undefined : 12).map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategoryId(cat.id)}
@@ -223,6 +320,18 @@ export default function RepositoryPage() {
                   {cat.name}
                 </button>
               ))}
+              
+              {categories.length > 12 && (
+                <button
+                  onClick={() => setShowAllCategories(!showAllCategories)}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all bg-[#0a0a0a] border-zinc-800 text-sky-400 hover:border-zinc-600 hover:text-sky-300 flex items-center gap-1.5 cursor-pointer"
+                >
+                  {showAllCategories ? "Show Less" : `More (${categories.length - 12})`}
+                  <svg className={`w-3.5 h-3.5 transition-transform ${showAllCategories ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
 
@@ -243,6 +352,28 @@ export default function RepositoryPage() {
                     {activeCompute === compute && <div className="w-2 h-2 bg-sky-400 rounded-full" />}
                   </div>
                   {compute}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">App Type</h3>
+            <div className="flex flex-col gap-2">
+              {EXECUTION_TYPES.map(execType => (
+                <button
+                  key={execType}
+                  onClick={() => setActiveExecutionType(execType)}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-all text-left ${
+                    activeExecutionType === execType 
+                      ? "bg-sky-500/10 border-sky-500/50 text-sky-400" 
+                      : "bg-[#0a0a0a] border-transparent hover:border-zinc-800 text-zinc-300"
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${activeExecutionType === execType ? "border-sky-400" : "border-zinc-600"}`}>
+                    {activeExecutionType === execType && <div className="w-2 h-2 bg-sky-400 rounded-full" />}
+                  </div>
+                  {execType}
                 </button>
               ))}
             </div>
@@ -272,20 +403,17 @@ export default function RepositoryPage() {
 
           <div>
             <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 px-1">Platforms</h3>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap gap-2">
               {PLATFORM_TYPES.map(platform => (
                 <button
                   key={platform}
                   onClick={() => setActivePlatform(platform)}
-                  className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-all text-left ${
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
                     activePlatform === platform 
                       ? "bg-sky-500/10 border-sky-500/50 text-sky-400" 
-                      : "bg-[#0a0a0a] border-transparent hover:border-zinc-800 text-zinc-300"
+                      : "bg-[#0a0a0a] border-zinc-800 text-zinc-300 hover:border-zinc-600"
                   }`}
                 >
-                  <div className={`w-4 h-4 rounded-md border flex items-center justify-center ${activePlatform === platform ? "border-sky-400 bg-sky-500/20" : "border-zinc-600"}`}>
-                    {activePlatform === platform && <svg className="w-3 h-3 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                  </div>
                   {platform}
                 </button>
               ))}
@@ -439,6 +567,31 @@ export default function RepositoryPage() {
                     ) : (
                       <div className="flex items-center gap-1 px-2 py-0.5 bg-zinc-800 border border-zinc-700 text-zinc-300 rounded text-xs font-medium">
                         Free
+                      </div>
+                    )}
+                    {model.executionType === 'web_app' && (
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded text-xs font-medium">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12.5 3a9 9 0 010 18M12 3v18M3 12h18" />
+                        </svg>
+                        Browser
+                      </div>
+                    )}
+                    {model.executionType === 'native_binary' && (
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-teal-500/10 border border-teal-500/20 text-teal-400 rounded text-xs font-medium">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Downloadable
+                      </div>
+                    )}
+                    {(model.executionType === 'daemon_uv' || model.executionType === 'daemon') && (
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded text-xs font-medium">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Engine Required
                       </div>
                     )}
                   </div>

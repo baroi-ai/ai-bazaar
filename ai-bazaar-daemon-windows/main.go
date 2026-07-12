@@ -35,14 +35,10 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
-}
-
-//const pbBaseURL = "https://api.aibazaars.store/"
+// const pbBaseURL = "https://api.aibazaars.store/"
+const appVersion = "1.0.0"
 
 const pbBaseURL = "http://127.0.0.1:8080"
 
@@ -94,12 +90,14 @@ type PBApp struct {
 
 var activeContainers = make(map[string]bool) // slug -> is running
 var installingApps = make(map[string]bool)
+var installingCancelFuncs = make(map[string]context.CancelFunc)
+var cancelingApps = make(map[string]bool)
 var startingApps = make(map[string]bool)
 var stoppingApps = make(map[string]bool)
 var uninstallingApps = make(map[string]bool)
 var processMutex sync.Mutex
-var wsMutex sync.Mutex
 var mainWindow fyne.Window
+var latestAvailableVersion string
 
 // Global Docker Client
 var dockerCli *client.Client
@@ -156,9 +154,7 @@ func getAvailablePort(desiredPort string) string {
 
 func detectGPUSupport() string {
 	// 1. Check for NVIDIA GPU
-	nvidiaSmiCmd := exec.Command("nvidia-smi")
-	hideWindow(nvidiaSmiCmd)
-	if err := nvidiaSmiCmd.Run(); err == nil {
+	if err := exec.Command("nvidia-smi").Run(); err == nil {
 		writeLog("🔍 [GPU Detection]: NVIDIA GPU detected via nvidia-smi.\n")
 		return "nvidia"
 	}
@@ -171,37 +167,18 @@ func detectGPUSupport() string {
 		}
 	}
 
-	// 2. Platform-specific fallback checks
-	if runtime.GOOS == "windows" {
-		cmd := exec.Command("wmic", "path", "win32_VideoController", "get", "name")
-		hideWindow(cmd)
-		if output, err := cmd.Output(); err == nil {
-			outputStr := strings.ToLower(string(output))
-			if strings.Contains(outputStr, "nvidia") {
-				writeLog("🔍 [GPU Detection]: NVIDIA GPU detected via wmic.\n")
-				return "nvidia"
-			}
-			if strings.Contains(outputStr, "amd") || strings.Contains(outputStr, "radeon") {
-				writeLog("🔍 [GPU Detection]: AMD GPU detected via wmic.\n")
-				return "amd"
-			}
-			if strings.Contains(outputStr, "intel") || strings.Contains(outputStr, "arc") {
-				writeLog("🔍 [GPU Detection]: Intel GPU detected via wmic.\n")
-				return "intel"
-			}
-		}
-	} else {
-		if _, err := os.Stat("/dev/kfd"); err == nil {
-			if _, err := os.Stat("/dev/dri"); err == nil {
-				writeLog("🔍 [GPU Detection]: AMD GPU detected via /dev/kfd and /dev/dri.\n")
-				return "amd"
-			}
+	// 2. Check for AMD GPU (Linux specific paths)
+	if _, err := os.Stat("/dev/kfd"); err == nil {
+		if _, err := os.Stat("/dev/dri"); err == nil {
+			writeLog("🔍 [GPU Detection]: AMD GPU detected via /dev/kfd and /dev/dri.\n")
+			return "amd"
 		}
 	}
 
 	writeLog("🔍 [GPU Detection]: No compatible GPU found. Defaulting to CPU mode.\n")
 	return "none"
 }
+
 
 
 func stopDockerContainer(slug string) {
@@ -315,18 +292,9 @@ func updateDockerPullLog(id string, status string, progressInfo string) {
 	}
 }
 
-func writeWS(conn *websocket.Conn, msg string) {
-	if conn != nil {
-		wsMutex.Lock()
-		conn.WriteMessage(websocket.TextMessage, []byte(msg))
-		wsMutex.Unlock()
-	}
-}
-
 // UILogWriter redirects standard output streams to our UI log system
 type UILogWriter struct {
 	Prefix string
-	Conn   *websocket.Conn
 }
 
 func (w *UILogWriter) Write(p []byte) (n int, err error) {
@@ -335,7 +303,6 @@ func (w *UILogWriter) Write(p []byte) (n int, err error) {
 		trimmed := strings.TrimSpace(line)
 		if len(trimmed) > 0 {
 			writeLog("%s %s\n", w.Prefix, trimmed)
-			writeWS(w.Conn, w.Prefix+" "+trimmed)
 		}
 	}
 	return len(p), nil
@@ -345,11 +312,23 @@ func (w *UILogWriter) Write(p []byte) (n int, err error) {
 // CORE INSTALLATION & EXECUTION ENGINE (SDK INTEGRATED)
 // ---------------------------------------------------------
 
-func executeRunAction(req ClientRequest, conn *websocket.Conn) {
+func executeRunAction(req ClientRequest) {
 	safeSlug := sanitizeSlug(req.Slug)
 	appFolder := getAppFolderPath(safeSlug)
 	containerName := "aibazaar-" + safeSlug
-	ctx := context.Background()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	processMutex.Lock()
+	installingCancelFuncs[safeSlug] = cancel
+	processMutex.Unlock()
+
+	defer func() {
+		cancel()
+		processMutex.Lock()
+		delete(installingCancelFuncs, safeSlug)
+		delete(cancelingApps, safeSlug)
+		processMutex.Unlock()
+	}()
 
 	processMutex.Lock()
 	isRunning := activeContainers[safeSlug]
@@ -360,16 +339,7 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	processMutex.Unlock()
 
 	if isRunning {
-		targetPort := "8899"
-		configPath := filepath.Join(appFolder, ".bazaar")
-		if configData, err := os.ReadFile(configPath); err == nil {
-			var config BazaarConfig
-			if json.Unmarshal(configData, &config) == nil && config.Port != "" {
-				targetPort = config.Port
-			}
-		}
 		writeLog("⚡ Application %s is already running.\n", safeSlug)
-		writeWS(conn, fmt.Sprintf("🚀 ONLINE: App is already running at http://127.0.0.1:%s", targetPort))
 
 		processMutex.Lock()
 		delete(installingApps, safeSlug)
@@ -416,16 +386,22 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	// PULL DOCKER IMAGE VIA SDK (With Progress)
 	// ==========================================
 	writeLog("📥 Initiating Docker Image Pull for %s...\n", req.ImageLink)
-	writeWS(conn, "📥 SYSTEM: Pulling Docker Image... (This might take a few minutes)")
 
 	reader, pullErr := dockerCli.ImagePull(ctx, req.ImageLink, image.PullOptions{})
 	if pullErr != nil {
 		writeLog("❌ ERROR: Failed to pull image: %v\n", pullErr)
+		os.RemoveAll(appFolder)
+
 		processMutex.Lock()
+		delete(installingCancelFuncs, safeSlug)
+		delete(cancelingApps, safeSlug)
 		delete(installingApps, safeSlug)
 		processMutex.Unlock()
 		if refreshInstalledApps != nil {
 			fyne.Do(func() { refreshInstalledApps() })
+		}
+		if refreshExploreApps != nil {
+			fyne.Do(func() { refreshExploreApps() })
 		}
 		return
 	}
@@ -444,10 +420,8 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	var lastUpdate time.Time
 	for {
 		var msg dockerPullMsg
-		if err := dec.Decode(&msg); err == io.EOF {
+		if err := dec.Decode(&msg); err != nil {
 			break
-		} else if err != nil {
-			continue
 		}
 
 		// Throttle UI updates to prevent freezing (twice a second)
@@ -459,30 +433,45 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 				progressStr = fmt.Sprintf(" (%.1f MB / %.1f MB)", mbCurrent, mbTotal)
 			}
 			updateDockerPullLog(msg.Id, msg.Status, progressStr)
-
-			wsMsg := msg.Status
-			if msg.Id != "" {
-				wsMsg = msg.Id + ": " + msg.Status
-			}
-			wsMsg += progressStr
-			writeWS(conn, "🐳 [Docker Pull]: "+wsMsg)
 			lastUpdate = time.Now()
 		}
 	}
 	reader.Close()
 
+	if ctx.Err() != nil {
+		writeLog("❌ ERROR: Pull cancelled: %v\n", ctx.Err())
+		os.RemoveAll(appFolder)
+
+		processMutex.Lock()
+		delete(installingCancelFuncs, safeSlug)
+		delete(cancelingApps, safeSlug)
+		delete(installingApps, safeSlug)
+		processMutex.Unlock()
+		if refreshInstalledApps != nil {
+			fyne.Do(func() { refreshInstalledApps() })
+		}
+		if refreshExploreApps != nil {
+			fyne.Do(func() { refreshExploreApps() })
+		}
+		return
+	}
+
 	processMutex.Lock()
+	delete(installingCancelFuncs, safeSlug)
+	delete(cancelingApps, safeSlug)
 	delete(installingApps, safeSlug)
 	processMutex.Unlock()
 	if refreshInstalledApps != nil {
 		fyne.Do(func() { refreshInstalledApps() })
+	}
+	if refreshExploreApps != nil {
+		fyne.Do(func() { refreshExploreApps() })
 	}
 
 	// ==========================================
 	// RUN DOCKER CONTAINER VIA SDK
 	// ==========================================
 	writeLog("⚡ Launching App...\n")
-	writeWS(conn, "⚡ SYSTEM: Launching App...")
 
 	dockerCli.ContainerRemove(ctx, containerName, container.RemoveOptions{Force: true})
 
@@ -541,7 +530,6 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	// Attempt GPU launch if requested and available
 	if req.IsGPU && gpuType != "none" {
 		writeLog("🔌 [GPU]: Attempting to launch in GPU mode (%s)...\n", gpuType)
-		writeWS(conn, fmt.Sprintf("🔌 SYSTEM: Attempting to launch in GPU mode (%s)...", gpuType))
 
 		applyGPUConfig(gpuType)
 		resp, createErr = dockerCli.ContainerCreate(ctx, &dockerContainer.Config{
@@ -567,16 +555,13 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 		if req.IsGPU && !req.IsFallback {
 			// User requested GPU, it failed/wasn't found, and they don't want CPU fallback
 			writeLog("❌ ERROR: GPU mode failed, and CPU fallback is disabled.\n")
-			writeWS(conn, "❌ ERROR: GPU mode failed, and CPU fallback is disabled.")
 			return
 		}
 
 		if req.IsGPU {
 			writeLog("⚠️ [GPU]: Falling back to CPU mode...\n")
-			writeWS(conn, "⚠️ SYSTEM: Falling back to CPU mode...")
 		} else {
 			writeLog("ℹ️ Launching in CPU mode...\n")
-			writeWS(conn, "ℹ️ SYSTEM: Launching in CPU mode...")
 		}
 
 		applyGPUConfig("none")
@@ -587,14 +572,12 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 
 		if createErr != nil {
 			writeLog("❌ ERROR: Failed to create App: %v\n", createErr)
-			writeWS(conn, "❌ ERROR: Failed to create App.")
 			return
 		}
 
 		startErr = dockerCli.ContainerStart(ctx, resp.ID, container.StartOptions{})
 		if startErr != nil {
 			writeLog("❌ ERROR: Failed to start App: %v\n", startErr)
-			writeWS(conn, "❌ ERROR: Failed to start App.")
 			return
 		}
 	}
@@ -607,7 +590,6 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	}
 
 	writeLog("🚀 ONLINE: Interface bound on port %s.\n", targetPort)
-	writeWS(conn, fmt.Sprintf("🚀 ONLINE: Interface bound on http://127.0.0.1:%s", targetPort))
 
 	// Stream Logs back to UI
 	logReader, err := dockerCli.ContainerLogs(ctx, resp.ID, container.LogsOptions{
@@ -617,8 +599,8 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 	})
 	if err == nil {
 		go func() {
-			outWriter := &UILogWriter{Prefix: "📦 [Out]:", Conn: conn}
-			errWriter := &UILogWriter{Prefix: "ℹ️ [Log]:", Conn: conn}
+			outWriter := &UILogWriter{Prefix: "📦 [Out]:"}
+			errWriter := &UILogWriter{Prefix: "ℹ️ [Log]:"}
 			stdcopy.StdCopy(outWriter, errWriter, logReader)
 			logReader.Close()
 		}()
@@ -633,7 +615,6 @@ func executeRunAction(req ClientRequest, conn *websocket.Conn) {
 		}
 	case <-statusCh:
 		writeLog("💤 SYSTEM: App stopped cleanly.\n")
-		writeWS(conn, "💤 SYSTEM: App stopped cleanly.")
 	}
 
 	processMutex.Lock()
@@ -862,6 +843,11 @@ func uninstallApp(rawSlug string) {
 	ctx := context.Background()
 
 	processMutex.Lock()
+	if activeContainers[slug] {
+		processMutex.Unlock()
+		writeLog("⚠️ Cannot uninstall %s: App is currently running. Please stop it first.\n", slug)
+		return
+	}
 	uninstallingApps[slug] = true
 	if refreshInstalledApps != nil {
 		fyne.Do(func() { refreshInstalledApps() })
@@ -902,85 +888,66 @@ func uninstallApp(rawSlug string) {
 	}
 }
 
-func handleCheck(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+func cancelInstallation(rawSlug string) {
+	slug := sanitizeSlug(rawSlug)
+	processMutex.Lock()
+	cancel, exists := installingCancelFuncs[slug]
+	processMutex.Unlock()
 
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
+	if exists && cancel != nil {
+		writeLog("🛑 [CANCEL]: Requesting cancellation of installation for %s...\n", slug)
+		cancel()
 	}
-
-	var req EndpointRequest
-	json.NewDecoder(r.Body).Decode(&req)
-
-	targetDir := getAppFolderPath(req.Slug)
-	_, err := os.Stat(filepath.Join(targetDir, ".bazaar"))
-	installed := err == nil
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]bool{"installed": installed})
 }
 
-func handleStop(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	var req EndpointRequest
-	json.NewDecoder(r.Body).Decode(&req)
-
-	// Run stop logic in background so API responds instantly
-	go stopDockerContainer(req.Slug)
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func handleDelete(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	var req EndpointRequest
-	json.NewDecoder(r.Body).Decode(&req)
-
-	// Threaded uninstallation
-	go uninstallApp(req.Slug)
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func handleWebSocket(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+func checkForUpdates(lblUpdateInfo *widget.Label, banner *fyne.Container, tabSettings *fyneContainer.TabItem, tabs *fyneContainer.AppTabs) {
+	resp, err := pbClient.Get("https://aibazaars.store/version")
 	if err != nil {
 		return
 	}
-	defer conn.Close()
+	defer resp.Body.Close()
 
-	for {
-		var req ClientRequest
-		if err := conn.ReadJSON(&req); err != nil {
-			break
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	rawVersion := strings.TrimSpace(string(bodyBytes))
+	if rawVersion == "" {
+		return
+	}
+
+	cleanVersion := func(v string) string {
+		v = strings.TrimSpace(v)
+		v = strings.TrimPrefix(v, ">")
+		v = strings.TrimSpace(v)
+		v = strings.TrimPrefix(v, "v")
+		v = strings.TrimSpace(v)
+		return v
+	}
+
+	cleanedLatest := cleanVersion(rawVersion)
+	cleanedCurrent := cleanVersion(appVersion)
+
+	if cleanedLatest != cleanedCurrent {
+		// Check if dismissed
+		dismissedPath := filepath.Join(getBaseDir(), ".dismissed_version")
+		if data, err := os.ReadFile(dismissedPath); err == nil {
+			if strings.TrimSpace(string(data)) == rawVersion {
+				return
+			}
 		}
 
-		if req.Action == "RUN" {
-			fyne.Do(func() {
-				ensureEngineReady(mainWindow, func() {
-					go executeRunAction(req, conn)
-				}, nil)
-			})
-		}
+		latestAvailableVersion = rawVersion
+
+		fyne.Do(func() {
+			lblUpdateInfo.SetText(fmt.Sprintf("🎉 A new update (%s) is available!", rawVersion))
+			banner.Show()
+			if tabSettings != nil && tabs != nil {
+				tabSettings.Text = "⚙️ Settings 🔴"
+				tabs.Refresh()
+			}
+		})
 	}
 }
 
@@ -1144,24 +1111,6 @@ func fetchIcon(appId, iconName string) fyne.Resource {
 	defer resp.Body.Close()
 	b, _ := io.ReadAll(resp.Body)
 	return fyne.NewStaticResource(iconName, b)
-}
-
-func startServer() bool {
-	ln, err := net.Listen("tcp", "127.0.0.1:4500")
-	if err != nil {
-		return false
-	}
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/check", handleCheck)
-	mux.HandleFunc("/stop", handleStop)
-	mux.HandleFunc("/delete", handleDelete)
-	mux.HandleFunc("/ws", handleWebSocket)
-	writeLog("📡 AI BAZAAR ENGINE ONLINE (Port: 4500)\n")
-
-	s := &http.Server{Handler: mux}
-	go s.Serve(ln)
-	return true
 }
 
 func main() {
@@ -1394,12 +1343,19 @@ func main() {
 								req.AppId = id
 								req.Slug = slug
 
-								executeRunAction(*req, nil)
+								executeRunAction(*req)
 							}(appId, appSlug, appName, appIcon)
 						}, nil)
 					})
 
-					card := fyneContainer.NewBorder(nil, nil, fyneContainer.NewPadded(img), fyneContainer.NewPadded(installBtn), textCol)
+					infoBtn := widget.NewButtonWithIcon("", theme.InfoIcon(), func() {
+						if u, err := url.Parse("https://aibazaars.store/apps/" + appSlug); err == nil {
+							a.OpenURL(u)
+						}
+					})
+
+					rightBox := fyneContainer.NewHBox(infoBtn, installBtn)
+					card := fyneContainer.NewBorder(nil, nil, fyneContainer.NewPadded(img), fyneContainer.NewPadded(rightBox), textCol)
 					newObjects = append(newObjects, fyneContainer.NewPadded(card), widget.NewSeparator())
 				}
 				fyne.Do(func() {
@@ -1534,7 +1490,26 @@ func main() {
 					workingText = "Uninstalling..."
 				}
 
-				if isInstalling || isStarting || isStopping || isUninstalling {
+				if isInstalling {
+					processMutex.Lock()
+					isCanceling := cancelingApps[appSlug]
+					processMutex.Unlock()
+
+					if isCanceling {
+						actionBtn = widget.NewButton("Canceling...", func() {})
+						actionBtn.Disable()
+					} else {
+						actionBtn = widget.NewButton("Cancel", func() {
+							processMutex.Lock()
+							cancelingApps[appSlug] = true
+							processMutex.Unlock()
+							if refreshInstalledApps != nil {
+								refreshInstalledApps()
+							}
+							cancelInstallation(appSlug)
+						})
+					}
+				} else if isStarting || isStopping || isUninstalling {
 					actionBtn = widget.NewButton(workingText, func() {})
 					actionBtn.Disable()
 				} else if isRunning {
@@ -1602,7 +1577,7 @@ func main() {
 					})
 
 					if isRunning {
-						btnBox = fyneContainer.NewHBox(openBtn, actionBtn, delBtn)
+						btnBox = fyneContainer.NewHBox(openBtn, actionBtn)
 					} else {
 						btnBox = fyneContainer.NewHBox(actionBtn, delBtn)
 					}
@@ -1632,6 +1607,7 @@ func main() {
 	// ==========================================
 	// 4. SETTINGS TAB
 	// ==========================================
+	var tabSettings *fyneContainer.TabItem
 	var logoUI fyne.CanvasObject
 	if _, err := os.Stat("logo.png"); err == nil {
 		logoImg := canvas.NewImageFromFile("logo.png")
@@ -1647,8 +1623,44 @@ func main() {
 	lblTitle.TextStyle = fyne.TextStyle{Bold: true}
 	lblTitle.Alignment = fyne.TextAlignCenter
 
+	lblVersion := canvas.NewText(fmt.Sprintf("Version v%s", appVersion), color.RGBA{150, 150, 150, 255})
+	lblVersion.TextSize = 12
+	lblVersion.Alignment = fyne.TextAlignCenter
+
+	lblUpdateInfo := widget.NewLabel("")
+	lblUpdateInfo.TextStyle = fyne.TextStyle{Bold: true}
+
+	var updateBanner *fyne.Container
+
+	btnDownload := widget.NewButtonWithIcon("Download Update", theme.DownloadIcon(), func() {
+		if u, err := url.Parse("https://aibazaars.store/download"); err == nil {
+			a.OpenURL(u)
+		}
+	})
+
+	btnDismiss := widget.NewButtonWithIcon("Dismiss", theme.CancelIcon(), func() {
+		if latestAvailableVersion != "" {
+			dismissedPath := filepath.Join(getBaseDir(), ".dismissed_version")
+			os.WriteFile(dismissedPath, []byte(latestAvailableVersion), 0644)
+		}
+		if updateBanner != nil {
+			updateBanner.Hide()
+		}
+		if tabSettings != nil && tabs != nil {
+			tabSettings.Text = "⚙️ Settings"
+			tabs.Refresh()
+		}
+	})
+
+	updateBanner = fyneContainer.NewVBox(
+		fyneContainer.NewCenter(lblUpdateInfo),
+		fyneContainer.NewCenter(fyneContainer.NewHBox(btnDownload, btnDismiss)),
+		widget.NewSeparator(),
+	)
+	updateBanner.Hide() // Hidden by default
+
 	lblDesc := widget.NewLabelWithStyle(
-		"The lightweight bridge for securely executing AI models.\nPowered by AI Bazaar Engine.\nListening on Port 4500.",
+		"The lightweight bridge for securely executing AI models.\nPowered by AI Bazaar Engine.",
 		fyne.TextAlignCenter,
 		fyne.TextStyle{},
 	)
@@ -1674,12 +1686,14 @@ func main() {
 	headerBox := fyneContainer.NewVBox(
 		logoUI,
 		fyneContainer.NewPadded(fyneContainer.NewCenter(lblTitle)),
+		fyneContainer.NewCenter(lblVersion),
+		updateBanner,
 		fyneContainer.NewPadded(lblDesc),
 		buttonsBox,
 		widget.NewSeparator(),
 	)
 
-	tabSettings := fyneContainer.NewTabItem("⚙️ Settings", fyneContainer.NewScroll(fyneContainer.NewPadded(headerBox)))
+	tabSettings = fyneContainer.NewTabItem("⚙️ Settings", fyneContainer.NewScroll(fyneContainer.NewPadded(headerBox)))
 
 	tabs = fyneContainer.NewAppTabs(tabTerminal, tabExplore, tabApps, tabSettings)
 	tabs.SetTabLocation(fyneContainer.TabLocationTop)
@@ -1706,13 +1720,7 @@ func main() {
 	// Pre-flight check on initial app startup
 	fyne.Do(func() {
 		ensureEngineReady(mainWindow, func() {
-			if !startServer() {
-				d := dialog.NewInformation("Port Conflict", "Port 4500 is already in use.\n\nPlease close any other instances of AI Bazaar and try again.", mainWindow)
-				d.SetOnClosed(func() {
-					a.Quit()
-				})
-				d.Show()
-			}
+			go checkForUpdates(lblUpdateInfo, updateBanner, tabSettings, tabs)
 		}, nil)
 	})
 

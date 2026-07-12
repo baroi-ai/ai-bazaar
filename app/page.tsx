@@ -69,38 +69,26 @@ export default function Home() {
           bgImageUrl: pb.files.getURL(record, record.bg_image),
         });
 
-        // 1. Fetch Carousel Data
-        const carouselRes = await pb.collection("carousel").getList(1, 5, { 
-          sort: "-created",
-          requestKey: null 
-        });
+        // Fetch all in parallel to avoid sequential network request waterfalls
+        const [
+          carouselRes,
+          latestRes,
+          premiumRes,
+          localRes,
+          topAppsRes
+        ] = await Promise.all([
+          pb.collection("carousel").getList(1, 5, { sort: "-created", requestKey: null }),
+          pb.collection("apps").getList(1, 9, { sort: "-updated,-created", requestKey: null }),
+          pb.collection("apps").getList(1, 9, { filter: "is_free=false", sort: "-updated,-created", requestKey: null }),
+          pb.collection("apps").getList(1, 9, { filter: "type='local'", sort: "-updated,-created", requestKey: null }),
+          pb.collection("top_apps").getList(1, 12, { expand: "relation", requestKey: null })
+        ]);
+
         setCarouselSlides(carouselRes.items.map(formatCarousel));
-
-        // 2. Fetch Latest Models
-        const latestRes = await pb.collection("apps").getList(1, 9, { 
-          sort: "-updated,-created",
-          requestKey: null
-        });
         setLatestModels(latestRes.items.map(formatApp));
-
-        // 3. Fetch Premium Apps
-        const premiumRes = await pb.collection("apps").getList(1, 9, {
-          filter: "is_free=false",
-          sort: "-updated,-created",
-          requestKey: null, 
-        });
         setPremiumApps(premiumRes.items.map(formatApp));
-
-        // 4. Fetch Local Apps
-        const localRes = await pb.collection("apps").getList(1, 9, {
-          filter: "type='local'",
-          sort: "-updated,-created",
-          requestKey: null
-        });
         setLocalApps(localRes.items.map(formatApp));
 
-        // 5. Fetch Top Charts
-        const topAppsRes = await pb.collection("top_apps").getList(1, 12, { expand: "relation", requestKey: null });
         const formattedTopApps = topAppsRes.items.flatMap((item) =>
           item.expand?.relation ? [formatApp(item.expand.relation)] : []
         );
@@ -187,25 +175,23 @@ export default function Home() {
   const topChartColumns = Math.ceil(topCharts.length / 3);
 
   // --- RENDER ---
-  if (isLoading) {
-    return (
-      <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-sky-500 font-sans">
-        <svg className="w-10 h-10 animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-      </main>
-    );
-  }
-
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-gray-100 font-sans">
+    <main className="min-h-screen bg-transparent text-gray-100 font-sans">
       <Navbar />
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         
         {/* DYNAMIC AUTO-SCROLLING HERO CAROUSEL */}
-        {carouselSlides.length > 0 && (
+        {isLoading ? (
+          <div className="w-full h-[250px] md:h-[300px] rounded-2xl bg-zinc-900/10 border border-zinc-800/60 animate-pulse mb-12 flex flex-col justify-end p-6 md:p-12 relative overflow-hidden">
+            <div className="space-y-4 max-w-xl relative z-10">
+              <div className="h-8 bg-zinc-800/60 rounded w-3/4"></div>
+              <div className="h-4 bg-zinc-800/40 rounded w-5/6"></div>
+              <div className="h-10 bg-zinc-800/50 rounded w-1/3 mt-4"></div>
+            </div>
+            <div className="absolute top-6 right-6 md:right-12 w-16 h-16 md:w-24 md:h-24 bg-zinc-800/30 rounded-2xl border border-zinc-700/50"></div>
+          </div>
+        ) : carouselSlides.length > 0 ? (
           <section className="mb-12 relative group">
             {/* FIX: Added aria-label to previous button */}
             <button aria-label="Previous slide" onClick={scrollPrev} className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/50 hover:bg-black/80 backdrop-blur-md border border-white/10 rounded-full items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl">
@@ -257,76 +243,107 @@ export default function Home() {
               ))}
             </div>
           </section>
-        )}
+        ) : null}
 
         {/* TOP CHARTS */}
-        {topCharts.length > 0 && (
-          <section className="mb-14">
-            <div className="flex items-center justify-between mb-4 md:mb-6">
-              <h2 className="text-xl md:text-2xl font-semibold text-white">Top charts</h2>
+        <section className="mb-14">
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <h2 className="text-xl md:text-2xl font-semibold text-white">Top charts</h2>
+            {!isLoading && (
               <Link href="/apps" className="text-sky-500 font-medium hover:text-sky-400 text-sm transition">
                 See all
               </Link>
-            </div>
+            )}
+          </div>
 
-            <div ref={topChartsRef} onScroll={handleTopChartsScroll} className="grid grid-rows-3 grid-flow-col md:grid-rows-none md:grid-flow-row md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 md:gap-x-6 gap-y-4 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none hide-scrollbar pb-2 md:pb-0 scroll-smooth">
-              {topCharts.map((app, index) => (
-                <Link key={app.id} href={`/apps/${app.slug}`} className="flex items-center group cursor-pointer p-2 rounded-xl hover:bg-zinc-800/50 border border-transparent hover:border-zinc-800 transition w-[85vw] sm:w-[350px] md:w-auto shrink-0 snap-center md:snap-align-none">
-                  {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
-                  <span className="text-zinc-400 w-6 text-sm font-medium text-center">{index + 1}</span>
-                  
-                  <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#0e0e0e] border border-zinc-800 flex items-center justify-center shadow-sm overflow-hidden ml-2 p-2.5 md:p-3 shrink-0">
-
-                    <img src={app.iconUrl} alt={`${app.name} logo`} className="w-full h-full object-contain relative z-0" />
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 md:gap-x-6 gap-y-4">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="animate-pulse flex items-center p-2 rounded-xl bg-[#0e0e0e]/50 border border-zinc-800/40">
+                  <span className="w-6 h-4 bg-zinc-800/60 rounded"></span>
+                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#0e0e0e] border border-zinc-900 flex-shrink-0 ml-2 p-2 relative z-0 flex items-center justify-center">
+                    <div className="w-full h-full bg-zinc-800/40 rounded-lg"></div>
                   </div>
-
-                  <div className="ml-3 md:ml-4 flex-grow min-w-0">
-                    <h3 className="text-sm md:text-base font-medium text-gray-100 leading-tight group-hover:text-sky-400 transition truncate">{app.name}</h3>
-                    <p className="text-xs md:text-sm text-zinc-400 truncate capitalize">{app.category}</p>
+                  <div className="ml-3 md:ml-4 flex-grow space-y-2">
+                    <div className="h-4 bg-zinc-800/60 rounded w-2/3"></div>
+                    <div className="h-3 bg-zinc-800/40 rounded w-1/3"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : topCharts.length > 0 ? (
+            <>
+              <div ref={topChartsRef} onScroll={handleTopChartsScroll} className="grid grid-rows-3 grid-flow-col md:grid-rows-none md:grid-flow-row md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 md:gap-x-6 gap-y-4 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none hide-scrollbar pb-2 md:pb-0 scroll-smooth">
+                {topCharts.map((app, index) => (
+                  <Link key={app.id} href={`/apps/${app.slug}`} className="flex items-center group cursor-pointer p-2 rounded-xl hover:bg-zinc-800/50 border border-transparent hover:border-zinc-800 transition w-[85vw] sm:w-[350px] md:w-auto shrink-0 snap-center md:snap-align-none">
                     {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
-                    <span className="text-[10px] md:text-xs text-zinc-400 font-mono mt-1">
-                      {app.size?.toLowerCase() === "cloud" || app.type?.toLowerCase() === "cloud" ? (
-                        <span className="flex items-center gap-0.5">
-                          {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
-                          <svg className="w-3 h-3 md:w-[14px] md:h-[14px] text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-2.5-8.5h5m-5 4h5" />
-                          </svg>
-                          {app.coin || 0}
-                        </span>
-                      ) : (
-                        app.size
-                      )}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
+                    <span className="text-zinc-400 w-6 text-sm font-medium text-center">{index + 1}</span>
+                    
+                    <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#0e0e0e] border border-zinc-800 flex items-center justify-center shadow-sm overflow-hidden ml-2 p-2.5 md:p-3 shrink-0">
 
-            {/* Pagination Dots for Top Charts on Mobile */}
-            <div className="md:hidden flex items-center justify-center space-x-1.5 mt-4">
-              {Array.from({ length: topChartColumns }).map((_, index) => (
-                <span
-                  key={index}
-                  className={`transition-all duration-300 rounded-full h-1.5 ${
-                    topChartsIndex === index ? "bg-sky-500 w-4" : "bg-zinc-700 w-1.5"
-                  }`}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+                      <img src={app.iconUrl} alt={`${app.name} logo`} className="w-full h-full object-contain relative z-0" />
+                    </div>
+
+                    <div className="ml-3 md:ml-4 flex-grow min-w-0">
+                      <h3 className="text-sm md:text-base font-medium text-gray-100 leading-tight group-hover:text-sky-400 transition truncate">{app.name}</h3>
+                      <p className="text-xs md:text-sm text-zinc-400 truncate capitalize">{app.category}</p>
+                      {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
+                      <span className="text-[10px] md:text-xs text-zinc-400 font-mono mt-1">
+                        {app.size?.toLowerCase() === "cloud" || app.type?.toLowerCase() === "cloud" ? (
+                          <span className="flex items-center gap-0.5">
+                            {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
+                            <svg className="w-3 h-3 md:w-[14px] md:h-[14px] text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                              <circle cx="12" cy="12" r="10" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-2.5-8.5h5m-5 4h5" />
+                            </svg>
+                            {app.coin || 0}
+                          </span>
+                        ) : (
+                          app.size
+                        )}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              {/* Pagination Dots for Top Charts on Mobile */}
+              <div className="md:hidden flex items-center justify-center space-x-1.5 mt-4">
+                {Array.from({ length: topChartColumns }).map((_, index) => (
+                  <span
+                    key={index}
+                    className={`transition-all duration-300 rounded-full h-1.5 ${
+                      topChartsIndex === index ? "bg-sky-500 w-4" : "bg-zinc-700 w-1.5"
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          ) : null}
+        </section>
 
         {/* LATEST APPS */}
-        {latestModels.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl md:text-2xl font-semibold text-white">Latest Apps</h2>
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl md:text-2xl font-semibold text-white">Latest Apps</h2>
+            {!isLoading && (
               <Link href="/apps" className="text-sky-500 font-medium hover:text-sky-400 text-sm transition">
                 See all
               </Link>
-            </div>
+            )}
+          </div>
 
+          {isLoading ? (
+            <div className="flex flex-row overflow-x-auto gap-4 md:gap-6 pb-6 hide-scrollbar">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="w-[28vw] sm:w-32 md:w-36 flex flex-col shrink-0 animate-pulse">
+                  <div className="w-full aspect-square rounded-2xl md:rounded-3xl bg-zinc-900/10 border border-zinc-800/40"></div>
+                  <div className="h-3 bg-zinc-800/60 rounded mt-3 w-3/4"></div>
+                  <div className="h-2.5 bg-zinc-800/40 rounded mt-1.5 w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : latestModels.length > 0 ? (
             <div className="flex flex-row overflow-x-auto gap-4 md:gap-6 pb-6 hide-scrollbar snap-x snap-mandatory">
               {latestModels.map((app) => (
                 <Link key={app.id} href={`/apps/${app.slug}`} className="w-[28vw] sm:w-32 md:w-36 flex flex-col group cursor-pointer shrink-0 snap-start">
@@ -357,19 +374,31 @@ export default function Home() {
                 </Link>
               ))}
             </div>
-          </section>
-        )}
+          ) : null}
+        </section>
 
         {/* Premium APPS */}
-        {premiumApps.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl md:text-2xl font-semibold text-white">Premium Apps</h2>
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl md:text-2xl font-semibold text-white">Premium Apps</h2>
+            {!isLoading && (
               <Link href="/apps" className="text-sky-500 font-medium hover:text-sky-400 text-sm transition">
                 See all
               </Link>
-            </div>
+            )}
+          </div>
 
+          {isLoading ? (
+            <div className="flex flex-row overflow-x-auto gap-4 md:gap-6 pb-6 hide-scrollbar">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="w-[28vw] sm:w-32 md:w-36 flex flex-col shrink-0 animate-pulse">
+                  <div className="w-full aspect-square rounded-2xl md:rounded-3xl bg-zinc-900/10 border border-zinc-800/40"></div>
+                  <div className="h-3 bg-zinc-800/60 rounded mt-3 w-3/4"></div>
+                  <div className="h-2.5 bg-zinc-800/40 rounded mt-1.5 w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : premiumApps.length > 0 ? (
             <div className="flex flex-row overflow-x-auto gap-4 md:gap-6 pb-6 hide-scrollbar snap-x snap-mandatory">
               {premiumApps.map((app) => (
                 <Link key={app.id} href={`/apps/${app.slug}`} className="w-[28vw] sm:w-32 md:w-36 flex flex-col group cursor-pointer shrink-0 snap-start">
@@ -400,19 +429,31 @@ export default function Home() {
                 </Link>
               ))}
             </div>
-          </section>
-        )}
+          ) : null}
+        </section>
 
         {/* LOCAL APPS */}
-        {localApps.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl md:text-2xl font-semibold text-white">Local Apps</h2>
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl md:text-2xl font-semibold text-white">Local Apps</h2>
+            {!isLoading && (
               <Link href="/apps" className="text-sky-500 font-medium hover:text-sky-400 text-sm transition">
                 See all
               </Link>
-            </div>
+            )}
+          </div>
 
+          {isLoading ? (
+            <div className="flex flex-row overflow-x-auto gap-4 md:gap-6 pb-6 hide-scrollbar">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="w-[28vw] sm:w-32 md:w-36 flex flex-col shrink-0 animate-pulse">
+                  <div className="w-full aspect-square rounded-2xl md:rounded-3xl bg-zinc-900/10 border border-zinc-800/40"></div>
+                  <div className="h-3 bg-zinc-800/60 rounded mt-3 w-3/4"></div>
+                  <div className="h-2.5 bg-zinc-800/40 rounded mt-1.5 w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : localApps.length > 0 ? (
             <div className="flex flex-row overflow-x-auto gap-4 md:gap-6 pb-6 hide-scrollbar snap-x snap-mandatory">
               {localApps.map((app) => (
                 <Link key={app.id} href={`/apps/${app.slug}`} className="w-[28vw] sm:w-32 md:w-36 flex flex-col group cursor-pointer shrink-0 snap-start">
@@ -443,8 +484,8 @@ export default function Home() {
                 </Link>
               ))}
             </div>
-          </section>
-        )}
+          ) : null}
+        </section>
 
         {/* 4-CARD BENTO SEO SECTION */}
         <section className="mb-12 p-6 md:p-12 rounded-[2rem] md:rounded-[2.5rem] relative overflow-hidden shadow-2xl backdrop-blur-xl border border-zinc-800/50 bg-[#0a0a0a]/80">

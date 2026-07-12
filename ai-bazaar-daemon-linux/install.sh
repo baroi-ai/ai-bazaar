@@ -26,12 +26,18 @@ cat <<EOF > "$DESKTOP_DIR/ai-bazaar-daemon.desktop"
 Type=Application
 Name=AI Bazaar
 Comment=Lightweight bridge for executing local AI models.
-Exec=$INSTALL_DIR/ai-bazaar-daemon
+Exec=$INSTALL_DIR/ai-bazaar-daemon %u
 Icon=ai-bazaar-daemon
 Terminal=false
 Categories=Utility;Development;
+MimeType=x-scheme-handler/aibazaar;
 EOF
 
 chmod +x "$DESKTOP_DIR/ai-bazaar-daemon.desktop"
+
+# Register the MIME type association
+echo "Registering custom URL protocol handler..."
+xdg-mime default ai-bazaar-daemon.desktop x-scheme-handler/aibazaar
+update-desktop-database "$DESKTOP_DIR"
 
 echo "Installation complete! You can now launch the app with its logo from your application menu or dock."
