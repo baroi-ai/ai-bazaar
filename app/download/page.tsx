@@ -100,7 +100,7 @@ export default function DownloadEnginePage() {
         <div className="relative hidden lg:block">
           <div className="rounded-2xl border border-white/10 overflow-hidden shadow-[0_0_80px_rgba(6,182,212,0.07)]">
             <video
-              src="/download/demo.mp4"
+              src="/download/demo.webm"
               autoPlay
               loop
               muted
@@ -237,7 +237,7 @@ export default function DownloadEnginePage() {
             <div className="flex-1 w-full lg:order-2">
               <div className="rounded-xl border border-white/8 overflow-hidden shadow-xl">
                 <Image
-                  src="/download/logs.png"
+                  src="/download/logs.webp"
                   alt="AI Bazaar Engine logs showing Podman starting successfully"
                   width={1010}
                   height={728}
@@ -263,7 +263,7 @@ export default function DownloadEnginePage() {
             <div className="flex-1 w-full">
               <div className="rounded-xl border border-white/8 overflow-hidden shadow-xl">
                 <Image
-                  src="/download/main.png"
+                  src="/download/main.webp"
                   alt="AI Bazaar Engine explore tab showing available AI apps"
                   width={1010}
                   height={728}
@@ -289,7 +289,7 @@ export default function DownloadEnginePage() {
             <div className="flex-1 lg:order-2 w-full grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-white/8 overflow-hidden shadow-xl">
                 <Image
-                  src="/download/running.png"
+                  src="/download/running.webp"
                   alt="AI Bazaar Engine showing app running on port 8899"
                   width={1010}
                   height={728}
@@ -298,7 +298,7 @@ export default function DownloadEnginePage() {
               </div>
               <div className="rounded-xl border border-white/8 overflow-hidden shadow-xl">
                 <Image
-                  src="/download/apps.png"
+                  src="/download/apps.webp"
                   alt="App web UI running in browser"
                   width={1010}
                   height={728}
