@@ -38,10 +38,11 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// const pbBaseURL = "https://api.aibazaars.store/"
 const appVersion = "1.0.0"
 
-const pbBaseURL = "http://127.0.0.1:8080"
+const pbBaseURL = "https://api.aibazaars.store/"
+
+//const pbBaseURL = "http://127.0.0.1:8080"
 
 var pbClient = &http.Client{Timeout: 10 * time.Second}
 
