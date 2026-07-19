@@ -16,7 +16,7 @@ export default function Footer() {
 
   return (
     // Added pb-16 for mobile to ensure the links aren't hidden behind the browser's bottom navigation bar
-    <footer className="bg-[#0a0a0a] border-t border-zinc-800/60 pt-12 pb-20 md:pb-8 mt-12 w-full">
+    <footer className="pt-12 pb-20 md:pb-8 mt-12 w-full">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* TOP SECTION: Brand & Socials */}
         <div className="mb-8 flex flex-col items-center md:items-start text-center md:text-left">
@@ -124,7 +124,7 @@ export default function Footer() {
 
             {/* Version Badge */}
             <span className="text-[10px] md:text-xs text-zinc-400 bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-full font-mono">
-              v6.2.1
+              v1.0.0
             </span>
 
             {/* Systems Operational Indicator */}

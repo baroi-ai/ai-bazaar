@@ -25,7 +25,7 @@ const getBadgeStyles = (badge: string) => {
 
 export default function Home() {
   // Data States
-  const [carouselSlides, setCarouselSlides] = useState<any[]>([]); 
+  const [carouselSlides, setCarouselSlides] = useState<any[]>([]);
   const [topCharts, setTopCharts] = useState<any[]>([]);
   const [latestModels, setLatestModels] = useState<any[]>([]);
   const [premiumApps, setPremiumApps] = useState<any[]>([]);
@@ -53,7 +53,7 @@ export default function Home() {
           coin: record.coin,
           type: record.type,
           iconUrl: pb.files.getURL(record, record.icon),
-          badge: record.badge || "", 
+          badge: record.badge || "",
           description: record.shortDescription || "Experience powerful AI capabilities.",
           buttonText: record.is_free ? "Run Locally" : "Use Cloud Compute",
         });
@@ -180,7 +180,7 @@ export default function Home() {
       <Navbar />
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        
+
         {/* DYNAMIC AUTO-SCROLLING HERO CAROUSEL */}
         {isLoading ? (
           <div className="w-full h-[250px] md:h-[300px] rounded-2xl bg-zinc-900/10 border border-zinc-800/60 animate-pulse mb-12 flex flex-col justify-end p-6 md:p-12 relative overflow-hidden">
@@ -278,7 +278,7 @@ export default function Home() {
                   <Link key={app.id} href={`/apps/${app.slug}`} className="flex items-center group cursor-pointer p-2 rounded-xl hover:bg-zinc-800/50 border border-transparent hover:border-zinc-800 transition w-[85vw] sm:w-[350px] md:w-auto shrink-0 snap-center md:snap-align-none">
                     {/* FIX: Changed text-zinc-500 to text-zinc-400 */}
                     <span className="text-zinc-400 w-6 text-sm font-medium text-center">{index + 1}</span>
-                    
+
                     <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#0e0e0e] border border-zinc-800 flex items-center justify-center shadow-sm overflow-hidden ml-2 p-2.5 md:p-3 shrink-0">
 
                       <img src={app.iconUrl} alt={`${app.name} logo`} className="w-full h-full object-contain relative z-0" />
@@ -312,9 +312,8 @@ export default function Home() {
                 {Array.from({ length: topChartColumns }).map((_, index) => (
                   <span
                     key={index}
-                    className={`transition-all duration-300 rounded-full h-1.5 ${
-                      topChartsIndex === index ? "bg-sky-500 w-4" : "bg-zinc-700 w-1.5"
-                    }`}
+                    className={`transition-all duration-300 rounded-full h-1.5 ${topChartsIndex === index ? "bg-sky-500 w-4" : "bg-zinc-700 w-1.5"
+                      }`}
                   />
                 ))}
               </div>
@@ -488,15 +487,15 @@ export default function Home() {
         </section>
 
         {/* 4-CARD BENTO SEO SECTION */}
-        <section className="mb-12 p-6 md:p-12 rounded-[2rem] md:rounded-[2.5rem] relative overflow-hidden shadow-2xl backdrop-blur-xl border border-zinc-800/50 bg-[#0a0a0a]/80">
+        <section className="mb-12 p-6 md:p-12 rounded-[2rem] md:rounded-[2.5rem] relative overflow-hidden shadow-2xl backdrop-blur-xl">
           <div className="absolute top-0 right-0 w-96 h-96 bg-sky-900/10 blur-[120px] pointer-events-none z-0"></div>
 
           <div className="text-center mb-10 md:mb-12 relative z-10">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Turn your browser into an <span className="text-sky-400">AI powerhouse</span>
+              One‑Click Install Local AI & <span className="text-sky-400">Open Source Apps</span>
             </h2>
             <p className="text-zinc-400 text-sm md:text-base max-w-2xl mx-auto">
-              Everything you need to run AI. Install and run free, private AI models locally on your device with zero setup, backed by seamless cloud compute when you need it.
+              Use free browser tools, scale with premium AI models, or run open-source apps directly on your local compute from GitHub in just one click.
             </p>
           </div>
 
@@ -551,7 +550,8 @@ export default function Home() {
 
       <Footer />
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />

@@ -153,7 +153,7 @@ export default function ImageUpscalerClient() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedModel, setSelectedModel] = useState(availableModels[0].id);
   const [upscaleLevel, setUpscaleLevel] = useState(upscaleLevels[0].id);
-  
+
   const [sourceImageFile, setSourceImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [downloadingIndex, setDownloadingIndex] = useState<string | null>(null);
@@ -212,9 +212,9 @@ export default function ImageUpscalerClient() {
 
       const response = await fetch("/api/upscale", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": pb.authStore.token 
+          "Authorization": pb.authStore.token
         },
         body: JSON.stringify({
           modelId: selectedModel,
@@ -265,15 +265,15 @@ export default function ImageUpscalerClient() {
 
   return (
     <div className="flex flex-col bg-transparent text-gray-300 font-sans scroll-smooth relative overflow-hidden">
-      
+
       {/* ABOVE THE FOLD SECTION (Forces min-h-screen to hide SEO until scroll) */}
       <div className="flex flex-col min-h-screen relative overflow-hidden">
         <Navbar />
-        
+
         {/* TOOL WORKSPACE SECTION */}
         <div className="flex-grow p-4 md:p-6 flex flex-col justify-center">
           <div className="w-full max-w-7xl mx-auto flex flex-col items-center justify-center">
-            
+
             {/* STATE 1: Empty */}
             {activeJobs.length === 0 && !imagePreviewUrl && (
               <div className="flex flex-col items-center justify-center text-center text-zinc-500 py-12 px-4">
@@ -332,7 +332,7 @@ export default function ImageUpscalerClient() {
         {/* MOBILE FRIENDLY INTERACTIVE INTERFACE BAR */}
         <div className="w-full px-4 pb-24 md:pb-8 pt-2 border-t border-zinc-900/40">
           <div className="max-w-4xl mx-auto space-y-3.5">
-            
+
             {/* Models Toggles Selector Row */}
             <div className="flex items-center justify-center gap-2 md:gap-3 w-full">
               <Select value={selectedModel} onValueChange={setSelectedModel} disabled={isLoading}>
@@ -361,19 +361,19 @@ export default function ImageUpscalerClient() {
                 <Label htmlFor="upload" className="cursor-pointer h-11 w-11 shrink-0 flex items-center justify-center bg-zinc-900 border border-zinc-800 hover:border-sky-500 hover:text-sky-400 rounded-xl text-zinc-400 transition-all active:scale-95 m-0">
                   <UploadCloud className="h-4 w-4" />
                 </Label>
-                
+
                 {/* REPLACED TEXTAREA WITH INPUT FOR SINGLE LINE NO-BREAK TEXT */}
-                <Input 
-                  placeholder={imagePreviewUrl ? "Ready to upscale." : "Upload image..."} 
-                  readOnly 
-                  className="flex-grow bg-transparent border-none text-zinc-100 placeholder-zinc-500 px-2 h-11 text-xs md:text-sm font-medium shadow-none focus-visible:ring-0 cursor-not-allowed pointer-events-none" 
+                <Input
+                  placeholder={imagePreviewUrl ? "Ready to upscale." : "Upload image..."}
+                  readOnly
+                  className="flex-grow bg-transparent border-none text-zinc-100 placeholder-zinc-500 px-2 h-11 text-xs md:text-sm font-medium shadow-none focus-visible:ring-0 cursor-not-allowed pointer-events-none"
                 />
               </div>
-              
+
               <Button onClick={handleGenerate} disabled={isLoading || !sourceImageFile} className="h-11 sm:h-11 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white font-bold transition-all shadow-lg text-xs tracking-wide shrink-0 flex items-center justify-center gap-2 active:scale-[0.98]">
                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                   <>
-                    <span>{isAuthenticated ? calculatedCost : "Upscale"}</span> 
+                    <span>{isAuthenticated ? calculatedCost : "Upscale"}</span>
                     <Coins className="w-3.5 h-3.5" />
                   </>
                 )}
@@ -385,9 +385,9 @@ export default function ImageUpscalerClient() {
       </div>
 
       {/* --- RICH DEEP CONTENT SECTION FOR SEO GOOGLE RANKING --- */}
-      <section className="w-full bg-[#08080c] border-t border-zinc-900 py-12 md:py-16 px-4 md:px-8">
+      <section className="w-full py-12 md:py-16 px-4 md:px-8">
         <article className="max-w-4xl mx-auto space-y-10 text-zinc-400 text-xs md:text-sm leading-relaxed">
-          
+
           <div className="text-center space-y-3">
             <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">
               Unlock Cinematic Clarity with Advanced AI Upscaling

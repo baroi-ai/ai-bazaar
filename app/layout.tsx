@@ -23,10 +23,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://aibazaars.store"),
   title: {
-    default: "AI Bazaars | Run Free AI Models in Your Browser",
+    default: "AI Bazaars | One-Click Local AI & Open Source Apps",
     template: "%s | AI Bazaars",
   },
-  description: "The world's first purely in-browser marketplace for local AI models. Experience zero-latency, private, and free AI inference powered by ONNX and WebGPU.",
+  description: "One-click install local AI & open-source apps. Use free browser tools, scale with premium AI models, and run private AI on local compute.",
   keywords: [
     "AI", "ONNX", "Transformers.js", "WebAssembly", "WebGPU", 
     "Local AI", "Browser AI", "AI Marketplace", "Free LLM", 

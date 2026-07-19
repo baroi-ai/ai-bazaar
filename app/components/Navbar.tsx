@@ -67,7 +67,7 @@ export default function Navbar() {
     : `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || user?.email || "Guest"}`;
 
   return (
-    <header className="sticky top-0 w-full z-50 pt-4 pb-2 px-4 sm:px-6 lg:px-8 bg-[#0a0a0a]/90 backdrop-blur-xl">
+    <header className="sticky top-0 w-full z-50 pt-4 pb-2 px-4 sm:px-6 lg:px-8  backdrop-blur-xl">
       <div className="max-w-[1600px] mx-auto flex items-center justify-between">
         {/* Left Side: Logo */}
         <Link

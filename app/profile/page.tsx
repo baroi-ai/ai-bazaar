@@ -25,7 +25,7 @@ export default function ProfilePage() {
     subscription?: {
       planId: string;
       subscriptionId: string;
-      status: string; 
+      status: string;
       currentPeriodEnd: string;
     } | null;
   } | null>(null);
@@ -42,7 +42,7 @@ export default function ProfilePage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  
+
   const CONFIRMATION_PHRASE = "delete my account";
 
   // --- 1. Load Real Profile & Protect Route ---
@@ -51,15 +51,15 @@ export default function ProfilePage() {
       router.push("/login");
     } else {
       const model = pb.authStore.model;
-      
+
       // Generate initials for fallback
-      const initials = model.name 
-        ? model.name.substring(0, 2).toUpperCase() 
+      const initials = model.name
+        ? model.name.substring(0, 2).toUpperCase()
         : model.email.substring(0, 2).toUpperCase();
 
       // Resolve the actual avatar URL from PocketBase
-      const avatarUrl = model.avatar 
-        ? pb.files.getURL(model, model.avatar) 
+      const avatarUrl = model.avatar
+        ? pb.files.getURL(model, model.avatar)
         : null;
 
       setCurrentUser({
@@ -69,9 +69,9 @@ export default function ProfilePage() {
         credits: model.credits || 0,
         initials: initials,
         // Using mock data for subscription until you add a Subscriptions collection
-        subscription: null 
+        subscription: null
       });
-      
+
       setIsLoadingProfile(false);
     }
   }, [router]);
@@ -80,7 +80,7 @@ export default function ProfilePage() {
   const handleRedeemCoupon = () => {
     if (!couponCode.trim()) return;
     setIsRedeeming(true);
-    
+
     // Fake network request
     setTimeout(() => {
       setIsRedeeming(false);
@@ -97,7 +97,7 @@ export default function ProfilePage() {
   // --- 3. Cancel Subscription Handler ---
   const proceedWithSubscriptionCancellation = () => {
     setIsCancellingSub(true);
-    
+
     setTimeout(() => {
       setIsCancellingSub(false);
       setIsCancelSubModalOpen(false);
@@ -116,15 +116,15 @@ export default function ProfilePage() {
 
   const proceedWithAccountDeletion = () => {
     if (deleteConfirmationText.toLowerCase() !== CONFIRMATION_PHRASE) return;
-    
+
     setIsDeletingAccount(true);
     setTimeout(async () => {
       setIsDeletingAccount(false);
       setIsDeleteDialogOpen(false);
-      
+
       try {
         if (pb.authStore.model?.id) {
-           await pb.collection('users').delete(pb.authStore.model.id);
+          await pb.collection('users').delete(pb.authStore.model.id);
         }
         pb.authStore.clear();
         alert("Account deleted. Logging out...");
@@ -162,7 +162,7 @@ export default function ProfilePage() {
   if (!currentUser) return null; // Safe fallback since useEffect handles the redirect
 
   return (
-    <main className="min-h-screen bg-[#050508] text-gray-100 font-sans flex flex-col relative">
+    <main className="min-h-screen  text-gray-100 font-sans flex flex-col relative">
       <Navbar />
 
       <div className="flex-grow space-y-6 pb-20 px-4 md:px-8 pt-8 w-full max-w-4xl mx-auto">
@@ -170,8 +170,8 @@ export default function ProfilePage() {
           My Profile
         </h1>
 
-        <div className="border border-zinc-800 bg-[#0e0e0e] shadow-2xl transition-all duration-300 ease-in-out w-full mx-auto rounded-[2rem] overflow-hidden">
-          
+        <div className="border border-zinc-800  shadow-2xl transition-all duration-300 ease-in-out w-full mx-auto rounded-[2rem] overflow-hidden">
+
           {/* HEADER */}
           <div className="flex flex-col items-center justify-center text-center pb-8 pt-10 border-b border-zinc-800/80 relative">
             <div className="h-24 w-24 mb-5 border-2 border-sky-500/50 shadow-[0_0_20px_rgba(14,165,233,0.3)] rounded-full bg-[#0a0a0a] flex items-center justify-center text-3xl font-bold text-sky-400 overflow-hidden">
@@ -190,7 +190,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-8 pt-8 px-6 md:px-10 pb-10">
-            
+
             {/* Email & Credits Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center space-x-3 p-4 rounded-xl border border-zinc-800/80 bg-[#0a0a0a] overflow-hidden">
@@ -373,7 +373,7 @@ export default function ProfilePage() {
                 This action represents a <strong>permanent data loss</strong>. We cannot recover your account, credits, or history once deleted.
               </p>
             </div>
-            
+
             <div className="py-5 space-y-4">
               <div className="text-sm text-zinc-300 bg-red-500/10 p-4 rounded-xl border border-red-500/20 text-center sm:text-left">
                 Type <span className="font-bold text-red-400">"{CONFIRMATION_PHRASE}"</span> below to confirm.

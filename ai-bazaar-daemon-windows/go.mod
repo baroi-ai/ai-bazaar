@@ -1,8 +1,6 @@
 module com.baroiai.daemon
 
-go 1.23
-
-toolchain go1.24.4
+go 1.25.0
 
 require (
 	fyne.io/fyne/v2 v2.7.4

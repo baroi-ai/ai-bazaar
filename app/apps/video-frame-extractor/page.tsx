@@ -90,7 +90,7 @@ export default function FrameExtractorPage() {
         return;
       }
       if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
-      
+
       setSourceVideoFile(file);
       const url = URL.createObjectURL(file);
       setVideoPreviewUrl(url);
@@ -203,7 +203,7 @@ export default function FrameExtractorPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-gray-100 font-sans flex flex-col">
+    <main className="min-h-screen text-gray-100 font-sans flex flex-col">
       <Navbar />
 
       {/* Hidden Video for Auto-Logic & Validation */}
@@ -234,12 +234,12 @@ export default function FrameExtractorPage() {
 
       {/* --- SECTION 1: THE TOOL (Above the Fold) --- */}
       <div className="flex flex-col min-h-[calc(100vh-80px)] w-full max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6">
-        
+
         {/* MAIN PREVIEW AREA */}
-        <div className="flex-1 bg-[#0e0e0e] border border-zinc-800/80 md:rounded-[2rem] rounded-2xl relative flex flex-col shadow-2xl overflow-hidden mb-6">
-          
+        <div className="flex-1 md:rounded-[2rem] rounded-2xl relative flex flex-col shadow-2xl overflow-hidden mb-6">
+
           <div className="flex-1 w-full h-full overflow-y-auto relative flex flex-col items-center justify-center p-4 md:p-8">
-            
+
             {/* STATE 1: Empty */}
             {!videoPreviewUrl && (
               <div className="flex flex-col items-center justify-center text-center p-6 md:p-12 w-full animate-in fade-in zoom-in-95 duration-500">
@@ -292,7 +292,7 @@ export default function FrameExtractorPage() {
                     <Trash2 className="w-4 h-4 mr-2" /> Clear All
                   </Button>
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 overflow-y-auto pb-8">
                   {extractedFrames.map((frame) => (
                     <div key={frame.id} className="flex flex-col gap-3 group">
@@ -320,7 +320,7 @@ export default function FrameExtractorPage() {
 
         {/* BOTTOM UPLOAD / GENERATE SECTION */}
         <div className="shrink-0 w-full flex flex-col items-center justify-center max-w-4xl mx-auto gap-3 mb-24 md:mb-0">
-          
+
           {/* Mode Switcher */}
           <div className="flex items-center bg-[#0e0e0e] p-1.5 px-4 rounded-full border border-zinc-800 shadow-xl w-fit gap-3">
             <span className={`text-[10px] md:text-xs uppercase font-bold tracking-wider transition-colors ${extractionMode === "auto" ? "text-cyan-400" : "text-zinc-500"}`}>
@@ -350,11 +350,10 @@ export default function FrameExtractorPage() {
               />
               <Label
                 htmlFor="source-video-upload"
-                className={`cursor-pointer h-12 md:h-14 w-12 md:w-14 flex items-center justify-center rounded-xl md:rounded-2xl transition-all shadow-lg ${
-                  videoPreviewUrl 
-                    ? "bg-cyan-500/10 border border-cyan-500/50 text-cyan-400" 
-                    : "bg-[#0e0e0e] border border-zinc-800 text-zinc-400 hover:text-cyan-400 hover:border-zinc-600"
-                }`}
+                className={`cursor-pointer h-12 md:h-14 w-12 md:w-14 flex items-center justify-center rounded-xl md:rounded-2xl transition-all shadow-lg ${videoPreviewUrl
+                  ? "bg-cyan-500/10 border border-cyan-500/50 text-cyan-400"
+                  : "bg-[#0e0e0e] border border-zinc-800 text-zinc-400 hover:text-cyan-400 hover:border-zinc-600"
+                  }`}
               >
                 <UploadCloud className="h-5 w-5 md:h-6 md:w-6" />
               </Label>
@@ -366,15 +365,14 @@ export default function FrameExtractorPage() {
               </span>
 
               <div className="absolute right-1.5 md:right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-                
+
                 <Button
                   onClick={handleGenerateClick}
                   disabled={isLoading || !videoPreviewUrl}
-                  className={`h-9 md:h-10 px-4 md:px-6 rounded-lg md:rounded-xl flex items-center justify-center text-xs md:text-sm font-bold transition-all shadow-lg shrink-0 ${
-                    isLoading || !videoPreviewUrl
-                      ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white hover:scale-105 active:scale-95"
-                  }`}
+                  className={`h-9 md:h-10 px-4 md:px-6 rounded-lg md:rounded-xl flex items-center justify-center text-xs md:text-sm font-bold transition-all shadow-lg shrink-0 ${isLoading || !videoPreviewUrl
+                    ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 text-white hover:scale-105 active:scale-95"
+                    }`}
                 >
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -392,7 +390,7 @@ export default function FrameExtractorPage() {
               </div>
             </div>
           </div>
-          
+
         </div>
       </div>
 
@@ -451,7 +449,7 @@ export default function FrameExtractorPage() {
 
       {/* --- SECTION 2: SEO & APP EXPLANATION GRID (Below the Fold) --- */}
       <div className="w-full max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 py-12 md:py-20 flex flex-col gap-8 md:gap-12">
-        
+
         {/* Features Grid */}
         <section className="p-6 md:p-12 rounded-[2rem] md:rounded-[2.5rem] relative overflow-hidden shadow-2xl border border-zinc-800/50 bg-[#0e0e0e]/50 backdrop-blur-xl max-w-4xl mx-auto w-full">
           <div className="absolute top-0 right-0 w-72 h-72 bg-cyan-500/5 blur-[100px] pointer-events-none z-0"></div>
@@ -524,7 +522,7 @@ export default function FrameExtractorPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
+
             {/* Minimum Specs */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -554,7 +552,7 @@ export default function FrameExtractorPage() {
                 <Globe className="w-4 h-4 text-blue-400" /> Supported Browsers
               </h3>
               <div className="grid grid-cols-2 gap-3">
-                
+
                 <div className="flex items-center gap-3 p-3 bg-zinc-900/50 border border-zinc-800/80 rounded-xl">
                   <Monitor className="w-5 h-5 text-zinc-400" />
                   <div>
@@ -596,8 +594,9 @@ export default function FrameExtractorPage() {
       </div>
 
       <Footer />
-      
-      <style dangerouslySetInnerHTML={{ __html: `
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />

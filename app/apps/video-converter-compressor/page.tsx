@@ -439,7 +439,7 @@ export default function VideoConverterPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-gray-100 font-sans flex flex-col">
+    <main className="min-h-screen text-gray-100 font-sans flex flex-col">
       <Navbar />
 
       {/* Hidden validator video element for initial file check */}
@@ -485,8 +485,8 @@ export default function VideoConverterPage() {
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
                 className={`w-full max-w-xl py-12 md:py-20 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 ${isDragOver
-                    ? "border-cyan-500 bg-cyan-500/5 scale-[1.02]"
-                    : "border-zinc-800 bg-[#0a0a0a] hover:border-zinc-700 hover:bg-[#0c0c0f]"
+                  ? "border-cyan-500 bg-cyan-500/5 scale-[1.02]"
+                  : "border-zinc-800 bg-[#0a0a0a] hover:border-zinc-700 hover:bg-[#0c0c0f]"
                   }`}
               >
                 <UploadCloud className="h-16 w-16 mb-6 text-zinc-600 animate-pulse" />
@@ -636,8 +636,8 @@ export default function VideoConverterPage() {
                       key={res.value}
                       onClick={() => setResolutionScale(res.value)}
                       className={`p-2.5 rounded-xl border text-center text-xs transition-all flex flex-col items-center justify-center ${resolutionScale === res.value
-                          ? "bg-cyan-500/10 border-cyan-500 text-white font-semibold"
-                          : "bg-[#060608] border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                        ? "bg-cyan-500/10 border-cyan-500 text-white font-semibold"
+                        : "bg-[#060608] border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
                         }`}
                     >
                       <span className="text-[10px]">{res.label}</span>

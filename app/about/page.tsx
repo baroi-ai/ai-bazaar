@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function About() {
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-gray-100 font-sans flex flex-col relative overflow-hidden">
+    <main className="min-h-screen text-gray-100 font-sans flex flex-col relative overflow-hidden">
       
       {/* Subtle Premium Background Glows */}
       <div className="absolute top-[-10%] left-[-20%] w-[600px] h-[600px] rounded-full bg-sky-500/5 blur-[150px] pointer-events-none" />
@@ -30,9 +30,17 @@ export default function About() {
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">
             The Ultimate AI App Store
           </h1>
-          <p className="text-lg md:text-xl text-zinc-400 leading-relaxed">
+          <p className="text-lg md:text-xl text-zinc-400 leading-relaxed mb-8">
             The AI landscape is fragmented. Our mission is simple: to bring the world's most powerful AI models and creative tools together into one unified workspace. Whether you need free local inference or massive cloud compute, it all lives here.
           </p>
+          <div className="inline-flex flex-col items-center justify-center p-6 rounded-2xl border border-zinc-800/80 bg-[#0a0a0a]/30 backdrop-blur-md max-w-2xl mx-auto shadow-lg hover:border-sky-500/20 transition-all duration-300">
+            <span className="text-xs md:text-sm font-bold text-sky-400 uppercase tracking-wider mb-2">
+              One‑Click Install Local AI & Open Source Apps
+            </span>
+            <p className="text-xs md:text-sm text-zinc-400 leading-relaxed">
+              Use free browser tools, scale with premium cloud compute, or run open-source apps directly on your local compute from GitHub in just one click.
+            </p>
+          </div>
         </div>
 
         {/* The Hybrid Ecosystem: Core Pillars Grid */}
@@ -40,21 +48,21 @@ export default function About() {
           
           {/* Pillar 1: Local & Free */}
           <div className="bg-gradient-to-b from-zinc-900/50 to-zinc-950/50 border border-zinc-800/80 p-8 rounded-3xl hover:border-sky-500/30 transition-all duration-300 group">
-            <div className="w-12 h-12 bg-[#0a0a0a] border border-zinc-800 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform duration-300">
+            <div className="w-12 h-12 bg-[#0a0a0a]/50 border border-zinc-800 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform duration-300">
               💻
             </div>
             <div className="flex items-center space-x-2 mb-3">
-              <h3 className="text-xl font-semibold text-white">Browser Native</h3>
+              <h3 className="text-xl font-semibold text-white">Local AI Models</h3>
               <span className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Free</span>
             </div>
             <p className="text-zinc-400 text-sm leading-relaxed">
-              Run optimized tools completely free. Inference happens locally inside your browser sandbox using your own hardware, meaning zero latency, zero server costs, and 100% total privacy.
+              Run optimized AI models completely free. Inference happens locally inside your browser sandbox using your own device's hardware (via ONNX & WebGPU), meaning zero latency, zero server costs, and 100% total privacy.
             </p>
           </div>
           
           {/* Pillar 2: Cloud & Premium */}
           <div className="bg-gradient-to-b from-zinc-900/50 to-zinc-950/50 border border-zinc-800/80 p-8 rounded-3xl hover:border-indigo-500/30 transition-all duration-300 group">
-            <div className="w-12 h-12 bg-[#0a0a0a] border border-zinc-800 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform duration-300">
+            <div className="w-12 h-12 bg-[#0a0a0a]/50 border border-zinc-800 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform duration-300">
               ⚡
             </div>
             <div className="flex items-center space-x-2 mb-3">
@@ -68,12 +76,15 @@ export default function About() {
           
           {/* Pillar 3: All-in-One Workspace */}
           <div className="bg-gradient-to-b from-zinc-900/50 to-zinc-950/50 border border-zinc-800/80 p-8 rounded-3xl hover:border-zinc-600 transition-all duration-300 group">
-            <div className="w-12 h-12 bg-[#0a0a0a] border border-zinc-800 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform duration-300">
+            <div className="w-12 h-12 bg-[#0a0a0a]/50 border border-zinc-800 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform duration-300">
               🛒
             </div>
-            <h3 className="text-xl font-semibold text-white mb-3">One Unified Hub</h3>
+            <div className="flex items-center space-x-2 mb-3">
+              <h3 className="text-xl font-semibold text-white">Open Source Apps</h3>
+              <span className="bg-violet-500/10 text-violet-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Open Source</span>
+            </div>
             <p className="text-zinc-400 text-sm leading-relaxed">
-              Stop managing twenty different subscriptions and bookmarking endless github repos. From background removers to advanced relighting engines, every tool you need is categorized, rated, and ready to launch in one click.
+              Stop managing twenty different subscriptions and compiling complex Github code. From background removers to video watermark tools, run fully open-source applications and custom web engines in one click.
             </p>
           </div>
         </div>

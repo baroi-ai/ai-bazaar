@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Download AI Bazaar Engine v1.0.0 | Run Local AI Models",
+  title: "Download AI Bazaar Engine v1.0.0 | Run Local AI Models & Open Source apps",
   description:
     "One-click install and run local AI models and open-source apps on your own hardware. Download the AI Bazaar Engine for Windows and Linux.",
   keywords:
@@ -32,9 +32,9 @@ export const metadata: Metadata = {
 const VERSION = "1.0.0";
 
 const WINDOWS_URL =
-  "https://github.com/baroi-ai/ai-bazaar/releases/download/Engine_4.0/AI-Bazaar-Windows-Installer-Setup.exe";
+  "https://github.com/baroi-ai/ai-bazaar/releases/download/Engine_1.0/ai-bazaar-engine-windows-podman-v1.0.0.zip";
 const LINUX_URL =
-  "https://github.com/baroi-ai/ai-bazaar/releases/download/Engine_5.0/ai-bazaar-engine-linux-podman.zip";
+  "https://github.com/baroi-ai/ai-bazaar/releases/download/Engine_1.0/ai-bazaar-engine-linux-podman-v1.0.0.zip";
 
 export default function DownloadEnginePage() {
   return (
